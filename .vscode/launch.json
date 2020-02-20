@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/Users/Grad/asultan/Documents/hwsw/project/src/a.out",
+            "program": "${workspaceFolder}/src/sim",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
