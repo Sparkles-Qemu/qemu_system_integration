@@ -12,19 +12,19 @@ Gtkwave usage has been added, to set it up in vscode do the following:
 2) Add the following to your ssh config file (~/.ssh/config), change user field
    to match your own username
 
-    Host gateway
+        Host gateway
 
-        User //TODO: Update coe username
+         User //TODO: Update coe username
 
-        Hostname gateway.coe.neu.edu
+         Hostname gateway.coe.neu.edu
 
-    Host remote
+        Host remote
 
-        User asulta//TODO: Update coe username
+         User asulta//TODO: Update coe username
 
-        ProxyCommand ssh -X -W %h:%p gateway
+         ProxyCommand ssh -X -W %h:%p gateway
 
-        Hostname remote.coe.neu.edu
+         Hostname remote.coe.neu.edu
 
 3) In the integrated terminal go to the src directory and run:
 make gtkwave WAVE=/traces/sim_signals.trace.vcd
