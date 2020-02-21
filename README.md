@@ -20,7 +20,7 @@ Gtkwave usage has been added, to set it up in vscode do the following:
 
         Host remote
 
-         User asulta//TODO: Update coe username
+         User //TODO: Update coe username
 
          ProxyCommand ssh -X -W %h:%p gateway
 
