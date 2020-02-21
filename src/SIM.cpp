@@ -18,14 +18,25 @@ using std::endl;
 int sc_main(int argc, char *argv[]) 
 {
     /**
-     * @brief Module instantiated with a name. This is necessary for displaying
-     * output signals in gtkwave (needs to be installed, will ask gunnar). Name
-     * signals to simplify debugging in gtkwave. 
+     * @brief Module instantiated with a name. This is necessary because the
+     * runtime may pick up on runtime errors and describe them in relation to
+     * signals connected to modules. 
      */
     sc_signal<bool > clk("clk"); 
     sc_signal<bool > reset("reset"); 
 
     PE pe1("pe1", &clk, &reset);
+
+    /**
+     * @brief Here's how you log specific signals you would want to watch in
+     * gtkwave. Just call sc_trace on whatever signal you want and give it a
+     * name so that you can find it in the signal heirarchy in gtkwave.
+     * 
+     */
+
+    sc_trace_file *wf = sc_create_vcd_trace_file("./src/traces/sim_signals.trace");
+    sc_trace(wf, clk, "clk");
+    sc_trace(wf, reset, "reset");
 
     reset = 0;
     /**

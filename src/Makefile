@@ -1,3 +1,5 @@
+WORKING_DIR:=$(shell pwd)
+
 all: debug
 
 debug:
@@ -7,4 +9,7 @@ release:
 clean:
 	rm -rf ./sim
 run:
-	./sim;
+	./sim
+	
+gtkwave:
+	ssh gateway -X gtkwave $(WORKING_DIR)/$(WAVE) && echo "exit"
