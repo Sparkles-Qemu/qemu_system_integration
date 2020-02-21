@@ -13,12 +13,17 @@ Gtkwave usage has been added, to set it up in vscode do the following:
    to match your own username
 
 Host gateway
+
         User //TODO: Update coe username
+        
         Hostname gateway.coe.neu.edu
 
 Host remote
-        User asulta//TODO: Update coe usernamen
+
+        User asulta//TODO: Update coe username
+
         ProxyCommand ssh -X -W %h:%p gateway
+
         Hostname remote.coe.neu.edu
 
 3) In the integrated terminal go to the src directory and run:
