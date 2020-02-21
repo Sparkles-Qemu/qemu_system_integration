@@ -12,13 +12,13 @@ Gtkwave usage has been added, to set it up in vscode do the following:
 2) Add the following to your ssh config file (~/.ssh/config), change user field
    to match your own username
 
-Host gateway
+    Host gateway
 
         User //TODO: Update coe username
-        
+
         Hostname gateway.coe.neu.edu
 
-Host remote
+    Host remote
 
         User asulta//TODO: Update coe username
 
