@@ -5,7 +5,7 @@ Please do not commit changes on main branch. Either develop locally or push to y
 Clone the repo after ssh-ing into remote.coe.neu.edu then connect with vscode to start developing.
 (It might be useful to update your ssh config files as described below before starying vscode)
 
-# GTKwave usage
+# GTKwave usage in vscode
 Gtkwave usage has been added, to set it up in vscode do the following:
 
 1) Install the extention:
@@ -29,8 +29,14 @@ Gtkwave usage has been added, to set it up in vscode do the following:
 
          Hostname remote.coe.neu.edu
 
-3) In the integrated terminal go to the src directory and run:
+3) In the integrated terminal go to the project src directory and run:
 make gtkwave WAVE=/traces/sim_signals.trace.vcd
+
+# GTKwave usage outside of vscode
+If GTKWave doesn't launch from within vscode you can just use a regular terminal.
+1) ssh remote
+2) cd to project_directory/src
+3) run: make gtkwave WAVE=/traces/sim_signals.trace.vcd
 
 Please note that sim_signals.trace.vcd is just a signal file, so if you are
 planning on generating other wave files you can change the WAVE variable. 
