@@ -34,7 +34,7 @@ int sc_main(int argc, char *argv[])
      * 
      */
 
-    sc_trace_file *wf = sc_create_vcd_trace_file("./src/traces/sim_signals.trace");
+    sc_trace_file *wf = sc_create_vcd_trace_file("./traces/sim_signals.trace");
     sc_trace(wf, clk, "clk");
     sc_trace(wf, reset, "reset");
 
