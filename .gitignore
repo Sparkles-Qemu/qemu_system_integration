@@ -1,0 +1,2 @@
+# ignore vcd trace files
+*.vcd
