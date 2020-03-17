@@ -2,7 +2,6 @@
 #include <systemc.h>
 
 // My defines 
-//
 
 
 
@@ -14,7 +13,7 @@ SC_MODULE (mult_accumulate) {
     sc_in<bool> reset;
     sc_in<bool> enable;
     sc_in<sc_uint<8> > partialSum;
-    sc_in<sc_uint<1> > pixelIn;
+    sc_in<sc_uint<8> > pixelIn;
 
     //outputs
     sc_out<sc_uint<8> > output;
@@ -29,8 +28,8 @@ SC_MODULE (mult_accumulate) {
 
         if(reset.read() == 1) {
             output.write(0);
-        } else if (enable.rea() == 1) {
-       //     result = pixelIn.read() * weight + partialSum.read();
+        } else if (enable.read() == 1) {
+            result = pixelIn.read() * weight + partialSum.read();
             output.write(result);
         }
     }
@@ -61,7 +60,7 @@ int sc_main(int argc, char* argv[]) {
 
     // Ports 
     sc_signal <bool> enable;
-    sc_signal <sc_uint<1> > pixel;
+    sc_signal <sc_uint<8> > pixel;
     sc_signal <bool> reset;
     sc_signal <bool> clock;
     sc_signal <sc_uint<8> > partialSum;
@@ -96,18 +95,18 @@ int sc_main(int argc, char* argv[]) {
     // Start test bench 
     enable = 1;
 
-    for(int i = 0; i < 255; ++i){
+    for(int i = 0; i < 252; ++i){
         
         clock = 0;
         sc_start(1, SC_NS);
         clock = 1;
+        sc_start(1, SC_NS);
         partialSum = i;
         pixel = 1;
-       // out_test = pixel*weight + partialSum;
-        sc_start(1, SC_NS);
+        out_test = pixel.read()*weight + partialSum.read();
         if( out != out_test ) {
             error++;
-            cout << "Error ocurred inputs:"<<"pixel="<< pixel << "partialSum="<<partialSum << "out_test=" << out_test<< endl;
+            cout << "Error ocurred inputs:"<<" pixel="<< pixel << " partialSum="<<partialSum << " out_test=" << out_test<< endl;
             cout <<"Expected value =" << out << endl;
         }
 
@@ -120,6 +119,7 @@ int sc_main(int argc, char* argv[]) {
     sc_start(1, SC_NS);
     if(out != 0) {
         error++;
+        cout<< "Reset did not work"<<" Out ="<< out<< endl;
     }
 
     //error checking
