@@ -114,8 +114,10 @@ int sc_main(int argc, char* argv[]) {
 
     //Test reset
     reset = 0;
+    clock = 0;
     sc_start(1, SC_NS);
     reset = 1;
+    clock = 1;
     sc_start(1, SC_NS);
     if(out != 0) {
         error++;
