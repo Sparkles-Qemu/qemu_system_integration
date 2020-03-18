@@ -8,6 +8,7 @@ INCLUDES=-I$(prefix)/include
 CPPFLAGS= 
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
+LIBXX=-L/Users/Student/wgaldame/Sparkles-QEMU/qemu_system_integration/src/systemc/lib-linux64 -lsystemc -lm
 
 top_builddir = ../systemc
 LIBTOOL=$(SHELL) $(top_builddir)/libtool
@@ -29,9 +30,9 @@ CXXLINK=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXXLINK) -o $@ $^ -L/Users/Student/wgaldame/Sparkles-QEMU/qemu_system_integration/src/systemc/lib-linux64 -lsystemc -lm
+	$(CXXLINK) -o $@ $^ $(LIBXX)
 
-%.o: $(SRCS) 
+maa.o: $(SRCS) 
 	$(CXXCOMPILE) -c -o $@ $^
 
 clean: 
