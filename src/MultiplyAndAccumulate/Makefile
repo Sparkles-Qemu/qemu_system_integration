@@ -10,10 +10,12 @@ AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
 LIBXX=-L/Users/Student/wgaldame/Sparkles-QEMU/qemu_system_integration/src/systemc/lib-linux64 -lsystemc -lm
 
+#edit top_builddir: this var should point to systemc folder
 top_builddir = ../systemc
 LIBTOOL=$(SHELL) $(top_builddir)/libtool
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 
+#Edit all these vars to match your sources and targets
 TARGET=maa
 SRCS=maa.cpp
 OBJS=maa.o
@@ -27,6 +29,7 @@ CXXLINK=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 					--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 									$(LDFLAGS)
 
+#If you have more than .o file make sure to added below and in the OBJS var
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
