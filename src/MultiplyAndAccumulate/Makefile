@@ -2,7 +2,7 @@ CXX=g++
 DEFS=-DPACKAGE_NAME=\"systemc\" -DPACKAGE_TARNAME=\"systemc\" -DPACKAGE_VERSION=\"2.3.0\" -DPACKAGE_STRING=\"systemc\ 2.3.0\" -DPACKAGE_BUGREPORT=\"\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\"
 DEFAULT_INCLUDES = -I.
 
-prefix=/Users/Student/wgaldame/Sparkles-QEMU/qemu_system_integration/src/systemc
+prefix=/Users/Student/$(USER)/Sparkles-QEMU/qemu_system_integration/src/systemc
 
 INCLUDES=-I$(prefix)/include
 CPPFLAGS= 
@@ -17,8 +17,7 @@ TARGET=maa
 SRCS=maa.cpp
 OBJS=maa.o
 
-CXXCOMPILE=$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-		   		   	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXCOMPILE=$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 			 			 	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 												$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -30,10 +29,10 @@ CXXLINK=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-			$(CXXLINK) -o $@ $^ -L/Users/Student/wgaldame/Sparkles-QEMU/qemu_system_integration/src/systemc/lib-linux64 -lsystemc -lm
+	$(CXXLINK) -o $@ $^ -L/Users/Student/wgaldame/Sparkles-QEMU/qemu_system_integration/src/systemc/lib-linux64 -lsystemc -lm
 
-%.o: maa.cpp
-				$(CXXCOMPILE) -c -o $@ $^
+%.o: $(SRCS) 
+	$(CXXCOMPILE) -c -o $@ $^
 
 clean: 
 	rm $(TARGET) $(OBJS)
