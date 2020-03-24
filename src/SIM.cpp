@@ -1,5 +1,5 @@
 #include "systemc.h"
-#include "PE.cpp"
+#include "DMA.cpp"
 
 using std::cout;
 using std::endl;
@@ -17,15 +17,12 @@ using std::endl;
  */
 int sc_main(int argc, char *argv[]) 
 {
-    /**
-     * @brief Module instantiated with a name. This is necessary because the
-     * runtime may pick up on runtime errors and describe them in relation to
-     * signals connected to modules. 
-     */
     sc_signal<bool > clk("clk"); 
     sc_signal<bool > reset("reset"); 
+    sc_signal<bool > enable("enable"); 
 
-    PE pe1("pe1", &clk, &reset);
+    // base DMA instantiation
+    DMA_Base dma_base("dma_base", &clk, &reset, &enable);
 
     /**
      * @brief Here's how you log specific signals you would want to watch in
@@ -39,6 +36,7 @@ int sc_main(int argc, char *argv[])
     sc_trace(wf, reset, "reset");
 
     reset = 0;
+    enable = 1;
     /**
      * @brief Steps the simulation one ns forward. The SC_NS value is an enum
      * and it can be milliseconds or seconds. 
