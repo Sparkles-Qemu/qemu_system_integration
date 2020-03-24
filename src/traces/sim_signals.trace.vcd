@@ -1,5 +1,5 @@
 $date
-     Mar 23, 2020       21:16:08
+     Mar 23, 2020       23:57:16
 $end
 
 $version
@@ -13,6 +13,7 @@ $end
 $scope module SystemC $end
 $var wire    1  aaa  clk       $end
 $var wire    1  aab  reset       $end
+$var wire    1  aac  enable       $end
 $upscope $end
 $enddefinitions  $end
 
@@ -23,6 +24,7 @@ $end
 $dumpvars
 0aaa
 0aab
+1aac
 $end
 
 #1000

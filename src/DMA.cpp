@@ -4,6 +4,7 @@
 #include "systemc.h"
 #include "map"
 #include "vector"
+#include <string>
 #include <iostream>
 
 //-----------------------------------------------------
@@ -41,28 +42,60 @@ SC_MODULE (DMA_Base)
   Descriptor descriptor;
   sc_uint<32> execute_index;
 
+  // Constructor
+  typedef DMA_Base SC_CURRENT_USER_MODULE; DMA_Base( ::sc_core::sc_module_name name, sc_signal<bool>* _clk, sc_signal<bool>* _reset, sc_signal<bool>* _enable)
+  {
+      this->clk(*_clk);
+      this->reset(*_reset);
+      this->enable(*_enable);
+
+      cout << "Module : " << name << " has been instantiated " << endl;
+  }
+};
+
+// Memory to Stream DMA module definition
+SC_MODULE (DMA_MM2S)
+{
+  //-----------Input Ports---------------
+  sc_in<sc_uint<8>* > ram;
+  
+  //-----------Output Ports--------------
+  sc_out<sc_uint<8> > stream;
+
+  // Base DMA module
+  DMA_Base* base;
+
   // Called on rising edge of clk or high level reset
   void update () 
   {
-    if (reset.read()) 
+    if (base->reset.read()) 
     { 
       cout << "@ " << sc_time_stamp() << " Module has been reset" << endl;
     } 
-    else if (enable.read())
+    else if (base->enable.read())
     {
       cout << "@ " << sc_time_stamp() << " Module has recieved a rising edge on clk signal" << endl;
     }
   }
 
   // Constructor
-  typedef DMA_Base SC_CURRENT_USER_MODULE; DMA_Base( ::sc_core::sc_module_name name, sc_signal<bool>* _clk, sc_signal<bool>* _reset, sc_signal<bool>* _enable)
+  typedef DMA_MM2S SC_CURRENT_USER_MODULE; DMA_MM2S( ::sc_core::sc_module_name name, sc_signal<sc_uint<8>* >* _ram, sc_signal<sc_uint<8> >* _stream, 
+                                                        sc_signal<bool>* _clk, sc_signal<bool>* _reset, sc_signal<bool>* _enable)
   {   
+      this->ram(*_ram);
+      this->stream(*_stream);
+
+      // create base dma name  
+      char base_name[sizeof(name) + 5];
+      strcpy(base_name, name);
+      strcat(base_name, "_base");
+
+      // create new base dma and connect signals
+      this->base = new DMA_Base(base_name, _clk, _reset, _enable);
+
       SC_METHOD (update);
-        sensitive << clk.pos() << reset;
-      
-      this->clk(*_clk);
-      this->reset(*_reset);
-      this->enable(*_enable);
+        sensitive << base->clk.pos();
+        sensitive << base->reset;
 
       cout << "Module : " << name << " has been instantiated " << endl;
   }

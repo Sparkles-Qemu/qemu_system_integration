@@ -21,8 +21,11 @@ int sc_main(int argc, char *argv[])
     sc_signal<bool > reset("reset"); 
     sc_signal<bool > enable("enable"); 
 
-    // base DMA instantiation
-    DMA_Base dma_base("dma_base", &clk, &reset, &enable);
+    sc_signal<sc_uint<8>* > ram("ram");
+    sc_signal<sc_uint<8> > stream("stream");
+
+    // DMA instantiation
+    DMA_MM2S dma("dma_mm2s", &ram, &stream, &clk, &reset, &enable);
 
     /**
      * @brief Here's how you log specific signals you would want to watch in
@@ -34,6 +37,7 @@ int sc_main(int argc, char *argv[])
     sc_trace_file *wf = sc_create_vcd_trace_file("./traces/sim_signals.trace");
     sc_trace(wf, clk, "clk");
     sc_trace(wf, reset, "reset");
+    sc_trace(wf, enable, "enable");
 
     reset = 0;
     enable = 1;
