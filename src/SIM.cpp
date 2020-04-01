@@ -21,11 +21,11 @@ int sc_main(int argc, char *argv[])
     sc_signal<bool > reset("reset"); 
     sc_signal<bool > enable("enable"); 
 
-    sc_signal<sc_uint<8>* > ram("ram");
-    sc_signal<sc_uint<8> > stream("stream");
+    sc_signal<float* > ram("ram");
+    sc_signal<float > stream("stream");
 
     // DMA instantiation
-    DMA_MM2S dma("dma_mm2s", &ram, &stream, &clk, &reset, &enable);
+    DMA dma("dma_mm2s", MM2S, clk, reset, enable, ram, stream);
 
     /**
      * @brief Here's how you log specific signals you would want to watch in
