@@ -16,9 +16,9 @@ LIBTOOL=$(SHELL) $(top_builddir)/libtool
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 
 #Edit all these vars to match your sources and targets
-TARGET=maa
+TARGET=SIM
 SRCS=maa.cpp
-OBJS=maa.o
+OBJS=maa.o sim.o
 
 CXXCOMPILE=$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -34,6 +34,9 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CXXLINK) -o $@ $^ $(LIBXX)
+
+sim.o: sim.cpp
+	$(CXXCOMPILE) -c -o $@ $^
 
 maa.o: $(SRCS) 
 	$(CXXCOMPILE) -c -o $@ $^
