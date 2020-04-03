@@ -5,7 +5,7 @@ using std::cout;
 using std::endl;
 
 #define MAX_RESET_CYCLES 10
-#define MAX_SIM_CYCLES 10
+#define MAX_SIM_CYCLES 20
 
 /**
  * @brief Simulation entry point note sc_main not main.... 
@@ -20,12 +20,17 @@ int sc_main(int argc, char *argv[])
     sc_signal<bool > clk("clk"); 
     sc_signal<bool > reset("reset"); 
     sc_signal<bool > enable("enable"); 
-
-    sc_signal<float* > ram("ram");
     sc_signal<float > stream("stream");
 
+    float ram[100];
+
     // DMA instantiation
-    DMA dma("dma_mm2s", MM2S, clk, reset, enable, ram, stream);
+    DMA dma("dma_mm2s", DmaDirection::MM2S, clk, reset, enable, ram, stream);
+    Descriptor d1 = {1, 0, DmaState::SUSPENDED, 3, 1};
+    Descriptor d2 = {0, 50, DmaState::WAIT, 5, 2};
+    dma.descriptors.push_back(d1);
+    dma.descriptors.push_back(d2);
+    dma.print_descriptors();
 
     /**
      * @brief Here's how you log specific signals you would want to watch in
@@ -59,6 +64,9 @@ int sc_main(int argc, char *argv[])
     }
     cout << "@ " << sc_time_stamp() << " Deasserting reset" << endl;
     reset = 0; 
+
+    // "enable" first descriptor
+    dma.descriptors[0].state = DmaState::TRANSFER;
     
     cout << "@ " << sc_time_stamp() << " Start Compute" << endl;
     for (int i = 0; i < MAX_SIM_CYCLES; i++)
