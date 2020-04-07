@@ -1,5 +1,6 @@
 #include "systemc.h"
 #include "DMA.cpp"
+#include "DMAtb.h"
 
 using std::cout;
 using std::endl;
@@ -17,81 +18,35 @@ using std::endl;
  */
 int sc_main(int argc, char *argv[]) 
 {
-    sc_signal<bool > clk("clk"); 
-    sc_signal<bool > reset("reset"); 
-    sc_signal<bool > enable("enable"); 
-    sc_signal<float > stream("stream");
+	sc_signal<bool> clk; 
+	sc_signal<bool> reset; 
+	sc_signal<bool> enable; 
+	sc_signal<float> stream;
+	//sc_signal<float, SC_MANY_WRITERS> stream;
+	float ram[100];
 
-    float ram[100];
+	// DMA instantiation
+	DMA dma("dma_mm2s", DmaDirection::MM2S, clk, reset, enable, ram, stream);
+	Descriptor d1 = {1, 0, DmaState::SUSPENDED, 3, 1};	// Test Suspended State
+	Descriptor d2 = {2, 50, DmaState::WAIT, 5, 2};		// Test Waiting State
+	Descriptor d3 = {3, 10, DmaState::TRANSFER, 2, 10}; // Test Standard access
+	Descriptor d4 = {0, 90, DmaState::TRANSFER, 11, 1}; // This should overflow ram
+	dma.descriptors.push_back(d1);
+	dma.descriptors.push_back(d2);
+	dma.descriptors.push_back(d3);
+	dma.descriptors.push_back(d4);
+	dma.print_descriptors();
 
-    // DMA instantiation
-    DMA dma("dma_mm2s", DmaDirection::MM2S, clk, reset, enable, ram, stream);
-    Descriptor d1 = {1, 0, DmaState::SUSPENDED, 3, 1};
-    Descriptor d2 = {0, 50, DmaState::WAIT, 5, 2};
-    dma.descriptors.push_back(d1);
-    dma.descriptors.push_back(d2);
-    dma.print_descriptors();
+	dma_test test("dma_test");
+	test.clk(clk);
+	test.enable(enable);
+	test.reset(reset);
+	test.stream(stream);
 
-    /**
-     * @brief Here's how you log specific signals you would want to watch in
-     * gtkwave. Just call sc_trace on whatever signal you want and give it a
-     * name so that you can find it in the signal heirarchy in gtkwave.
-     * 
-     */
+	sc_start(); // Run Test
 
-    sc_trace_file *wf = sc_create_vcd_trace_file("./traces/sim_signals.trace");
-    sc_trace(wf, clk, "clk");
-    sc_trace(wf, reset, "reset");
-    sc_trace(wf, enable, "enable");
+	return 0;
 
-    reset = 0;
-    enable = 1;
-    /**
-     * @brief Steps the simulation one ns forward. The SC_NS value is an enum
-     * and it can be milliseconds or seconds. 
-     * 
-     */
-    sc_start(1, SC_NS);
-    reset = 1;
-    cout << "@ " << sc_time_stamp() << " Asserting reset" << endl;
-    for (int i = 0; i < MAX_RESET_CYCLES; i++)
-    {
-        /**
-         * @brief Since rest is level triggered, update will only be called once
-         * 
-         */
-        sc_start(1, SC_NS); 
-    }
-    cout << "@ " << sc_time_stamp() << " Deasserting reset" << endl;
-    reset = 0; 
-
-    // "enable" first descriptor
-    dma.descriptors[0].state = DmaState::TRANSFER;
-    
-    cout << "@ " << sc_time_stamp() << " Start Compute" << endl;
-    for (int i = 0; i < MAX_SIM_CYCLES; i++)
-    {
-        clk = 1;
-        sc_start(1, SC_NS);
-        clk = 0;
-        sc_start(1, SC_NS);
-    }
-
-    cout << "@ " << sc_time_stamp() << " Done with compute, testing async reset" << endl;
-    
-    /**
-     * @brief Random reset not tied to a particular clk cycle. Note change in precision
-     * when outputing sim time in module.
-     * 
-     */
-    cout << "@ " << sc_time_stamp() << " Compute complete, testing async reset" << endl;
-    sc_start(1.5, SC_NS); 
-    reset = 1;
-    sc_start(1.5, SC_NS);
-    
-    cout << "@ " << sc_time_stamp() << " Sim complete, Simulation terminating .... " << endl;
-
-
-    return 0; // Terminate simulation
 }
+
 

@@ -107,8 +107,7 @@ struct DMA : public sc_module
   }
 
   // Constructor
-  DMA(sc_module_name name, DmaDirection _direction, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, 
-          const sc_signal<bool>& _enable, float* _ram, sc_signal<float>& _stream)
+  DMA(sc_module_name name, DmaDirection _direction, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset,const sc_signal<bool>& _enable, float* _ram, sc_signal<float>& _stream)
   {
       SC_METHOD(update);
         sensitive << reset;
