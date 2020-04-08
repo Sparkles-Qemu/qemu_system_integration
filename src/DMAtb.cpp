@@ -1,6 +1,7 @@
 #include "DMA.cpp"
 #include "systemc.h"
 #include <cstdlib>
+#include "DMAtb.h"
 
 #define SIM_CYCLES 100
 
@@ -11,22 +12,33 @@ void dma_test::stimulus()
 
 	// Enable DMA
 	reset.write(0);
-	enable.write(1);
-	
+	enable.write(0);
+	clk.write(0);
+
+	cout << "===== Test Bench =====" << endl;
+	cout << "Test 1: Reset DMA" << endl;
+
+	cout << "sc_start" << endl;	
 	sc_start(1, SC_NS);
 
 	// Reset DMA
 	reset.write(1);
-	for (i = 0; i <= 5; i++)
+	cout << "write reset 1" << endl;
+	for (i = 0; i <= 0; i++)
 	{
+		//cout << clk.read() << endl;
 		clk.write(1);
 		sc_start(1, SC_NS);
 		clk.write(0);
 		sc_start(1, SC_NS);
+		cout << "endloop" << endl;
 	};
 	// Deassert reset to begin initial transfer
 	reset.write(0);
 	
+	// Run Descriptors
+	cout << "Test 2: Run Descriptors" << endl;
+
 	cout << "@ " << sc_time_stamp() << " Start Compute" << endl;
 	for (i = 0; i <= SIM_CYCLES; i++)
         {
@@ -36,6 +48,7 @@ void dma_test::stimulus()
                 sc_start(1, SC_NS);
         };
 
+	// Test Async Reset
 	cout << "@ " << sc_time_stamp() << " Done with compute, testing async reset" << endl;
 
 	sc_start(1.5, SC_NS);
@@ -43,9 +56,6 @@ void dma_test::stimulus()
 	sc_start(1.5, SC_NS);
 
 	cout << "@ " << sc_time_stamp() << " Test Bench complete, Terminating test module..." << endl;
-
-	return 0;	
-
 }
 
 // This will just print information about the tests that will run on the DMA
@@ -55,7 +65,7 @@ void dma_test::print_test_info()
 
 
 }
-
+SC_HAS_PROCESS(dma_test);
 
 //SC_MODULE_EXPORT(dma_test)	
 /*
