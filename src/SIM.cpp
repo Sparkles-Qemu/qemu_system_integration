@@ -1,6 +1,6 @@
 #include "systemc.h"
 #include "DMA.cpp"
-#include "DMAtb.cpp"
+#include "DMAtb.h"
 
 using std::cout;
 using std::endl;
@@ -43,7 +43,7 @@ int sc_main(int argc, char *argv[])
 	//test.reset(reset);
 	//test.stream(stream);
 
-	sc_start(); // Run Test
+	sc_start(1, SC_NS); // Run Test
 
 	return 0;
 

@@ -70,6 +70,6 @@ SC_MODULE(dma_test)
 	~dma_test()
 	{
 		sc_close_vcd_trace_file(wf);
-		// Deinitialize DMA component
 	}
 };
+

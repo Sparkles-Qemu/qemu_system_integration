@@ -65,7 +65,7 @@ void dma_test::print_test_info()
 
 
 }
-SC_HAS_PROCESS(dma_test);
+//SC_HAS_PROCESS(dma_test);
 
 //SC_MODULE_EXPORT(dma_test)	
 /*
