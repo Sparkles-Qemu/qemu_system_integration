@@ -72,7 +72,7 @@ https://github.com/Xilinx/libsystemctlm-soc
 
 
 # Target Architecture
-![Image description](https://ibb.co/GQC312c)
+![Image description](https://i.ibb.co/9Hy3fTs/Project-Design.png)
 
 
 
