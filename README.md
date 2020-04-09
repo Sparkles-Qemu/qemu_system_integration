@@ -71,3 +71,9 @@ https://github.com/Xilinx/systemctlm-cosim-demo
 https://github.com/Xilinx/libsystemctlm-soc
 
 
+# Target Architecture
+![Image description](https://www.google.com/logos/doodles/2020/thank-you-custodial-and-sanitation-workers-6753651837108756-law.gif)
+
+
+
+
