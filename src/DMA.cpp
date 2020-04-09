@@ -70,7 +70,6 @@ struct DMA : public sc_module
   // Called on rising edge of clk or high level reset
   void update() 
   {
-   cout << "Running Update" << endl; 
    if (reset.read()) 
     {
       // assume at least one descriptor is in dma at all times

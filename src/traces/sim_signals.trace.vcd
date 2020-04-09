@@ -1,0 +1,86 @@
+$date
+     Apr 09, 2020       18:34:42
+$end
+
+$version
+              SystemC 2.3.0_pub_rev_20111121-OSCI --- Nov 24 2019 16:06:02
+$end
+
+$timescale
+     1 ps
+$end
+
+$scope module SystemC $end
+$var wire    1  aaa  clock       $end
+$var real    1  aab  stream       $end
+$var wire    1  aac  reset       $end
+$var wire    1  aad  enable       $end
+$upscope $end
+$enddefinitions  $end
+
+$comment
+All initial values are dumped below at time 0 sec = 0 timescale units.
+$end
+
+$dumpvars
+0aaa
+r0 aab
+0aac
+0aad
+$end
+
+#1000
+1aac
+1aad
+
+#13000
+0aac
+
+#15000
+r1 aab
+
+#17000
+r2 aab
+
+#29000
+r10 aab
+
+#31000
+r20 aab
+
+#33000
+r89 aab
+
+#35000
+r90 aab
+
+#37000
+r91 aab
+
+#39000
+r92 aab
+
+#41000
+r93 aab
+
+#43000
+r94 aab
+
+#45000
+r95 aab
+
+#47000
+r96 aab
+
+#49000
+r97 aab
+
+#51000
+r98 aab
+
+#53000
+r99 aab
+
+#56500
+1aac
+
