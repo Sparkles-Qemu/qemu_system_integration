@@ -41,6 +41,23 @@ If GTKWave doesn't launch from within vscode you can just use a regular terminal
 Please note that sim_signals.trace.vcd is just a signal file, so if you are
 planning on generating other wave files you can change the WAVE variable. 
 
-Good luck guys! 
+# QEMU+SystemC simulation access
+1) Ask bruno for an account on Diabase (server in ESL lab)
+2) ssh into peta@172.17.0.2 with password 123456789
+3) Start tmux or ssh twice
+4) cd ~/qemu_zcu102 and run ./launch.sh
+5) In screen cd to ~/systemctlm-cosim-demo and run ./launch
+6) qemu should boot into linux with access to some registers exposed by systemc
+
+Relevant resources:
+Slides on Systemc and SystemcTLM http://users.ece.utexas.edu/~gerstl/ee382m_f18/lectures/lecture_3.pdf
+Setup process for Qemu+SystemC simulating a ZynqMP http://users.ece.utexas.edu/~gerstl/ee382m_f18/labs/QEMU_SystemC_Tutorial.htm
+SystemC TLM tutorial https://www.doulos.com/knowhow/systemc/tlm2/
+SystemC tutorial https://www.doulos.com/knowhow/systemc/tutorial/ 
+Xilinx QEMU+SystemC setup tutorial https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18842109/QEMU+SystemC+and+TLM+CoSimulation
+Repo for Xilinx SystemC Demo https://github.com/Xilinx/systemctlm-cosim-demo
+Repo for Xilinx libsoc https://github.com/Xilinx/libsystemctlm-soc
+
+
 
 Aly
