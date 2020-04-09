@@ -50,13 +50,19 @@ planning on generating other wave files you can change the WAVE variable.
 6) qemu should boot into linux with access to some registers exposed by systemc
 
 Relevant resources:
-Slides on Systemc and SystemcTLM http://users.ece.utexas.edu/~gerstl/ee382m_f18/lectures/lecture_3.pdf
-Setup process for Qemu+SystemC simulating a ZynqMP http://users.ece.utexas.edu/~gerstl/ee382m_f18/labs/QEMU_SystemC_Tutorial.htm
-SystemC TLM tutorial https://www.doulos.com/knowhow/systemc/tlm2/
-SystemC tutorial https://www.doulos.com/knowhow/systemc/tutorial/ 
-Xilinx QEMU+SystemC setup tutorial https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18842109/QEMU+SystemC+and+TLM+CoSimulation
-Repo for Xilinx SystemC Demo https://github.com/Xilinx/systemctlm-cosim-demo
-Repo for Xilinx libsoc https://github.com/Xilinx/libsystemctlm-soc
+1) Slides on Systemc and SystemcTLM http://users.ece.utexas.edu/~gerstl/ee382m_f18/lectures/lecture_3.pdf
+
+2) Setup process for Qemu+SystemC simulating a ZynqMP http://users.ece.utexas.edu/~gerstl/ee382m_f18/labs/QEMU_SystemC_Tutorial.htm
+
+3) SystemC TLM tutorial https://www.doulos.com/knowhow/systemc/tlm2/
+
+4) SystemC tutorial https://www.doulos.com/knowhow/systemc/tutorial/ 
+
+5) Xilinx QEMU+SystemC setup tutorial https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18842109/QEMU+SystemC+and+TLM+CoSimulation
+
+6) Repo for Xilinx SystemC Demo https://github.com/Xilinx/systemctlm-cosim-demo
+
+7) Repo for Xilinx libsoc https://github.com/Xilinx/libsystemctlm-soc
 
 
 
