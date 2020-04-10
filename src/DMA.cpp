@@ -85,9 +85,9 @@ struct DMA : public sc_module
       {
         std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Transfering data" << std::endl;
         if (direction == DmaDirection::MM2S)
-          stream = *(ram + current_ram_index);  // Memory to Stream
+          stream.write(*(ram + current_ram_index));  // Memory to Stream
         else
-          *(ram + current_ram_index) = stream;  // Stream to Memory
+          *(ram + current_ram_index) = stream.read();  // Stream to Memory
 
         // update ram index
         current_ram_index += descriptors[execute_index].x_modify;
