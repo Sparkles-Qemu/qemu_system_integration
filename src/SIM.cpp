@@ -22,6 +22,8 @@ int sc_main(int argc, char *argv[])
 	sc_signal<bool> reset("reset"); 
 	sc_signal<bool> enable("enable"); 
 	sc_signal<float, SC_MANY_WRITERS> stream("stream");	// AC_MANY_WRITERS allows stream to have numerous drivers, (dma and dma_test)
+	
+	// RAM representing external Memory
 	float ram[100];
 
 	// Fill ram with 1-100
