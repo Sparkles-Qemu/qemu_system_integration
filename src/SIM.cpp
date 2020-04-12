@@ -31,8 +31,8 @@ int sc_main(int argc, char *argv[])
 	for (i = 0; i < 100; i++)
 		ram[i] = i;
 
-	// DMA instantiation
-	DMA dma_temp("dma_mm2s", DmaDirection::MM2S, clk, reset, enable, ram, stream);
+	// DMA for MM2S S2MM instantiation
+	DMA dma_temp("dma_temp", DmaDirection::MM2S, clk, reset, enable, ram, stream);
 	Descriptor d1 = {1, 0, DmaState::SUSPENDED, 3, 1}; // Test Suspended State
 	Descriptor d2 = {2, 50, DmaState::WAIT, 5, 2};     // Test Waiting State
 	Descriptor d3 = {3, 10, DmaState::TRANSFER, 2, 10};// Test Standard access
@@ -42,18 +42,34 @@ int sc_main(int argc, char *argv[])
 	dma_temp.descriptors.push_back(d3);
 	dma_temp.descriptors.push_back(d4);
 	dma_temp.print_descriptors();
-
-	dma_test test("dma_test", dma_temp, ram);
 	
+	// DMA MM2S and S2MM Testbench
+	dma_test test("dma_test", dma_temp, ram);
 	test.clk(clk);
 	test.enable(enable);
 	test.reset(reset);
 	test.stream(stream);
 
+	// DMA_MM2MM instantiation
+	DMA dma_s2mm("dma_s2mm", DmaDirection::S2MM, clk, reset, enable, ram, stream);
+	DMA dma_mm2s("dma_mm2s", DmaDirection::MM2S, clk, reset, enable, ram, stream);
+	dma_s2mm.descriptors.push_back(d1);
+        dma_s2mm.descriptors.push_back(d2);
+        dma_s2mm.descriptors.push_back(d3);
+        dma_s2mm.descriptors.push_back(d4);
+	dma_mm2s.descriptors.push_back(d1);
+        dma_mm2s.descriptors.push_back(d2);
+        dma_mm2s.descriptors.push_back(d3);
+        dma_mm2s.descriptors.push_back(d4);
+
+	DMA_MM2MM dma_mm2mm("dma_mm2mm", dma_s2mm, dma_mm2s, clk, reset, enable);
+	
+	dma_mm2mm.mm2s->print_descriptors();
+	dma_mm2mm.s2mm->print_descriptors();
+
 	sc_start();//1, SC_NS); // Run Test
 
 	return 0;
-
 }
 
 
