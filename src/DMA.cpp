@@ -1,5 +1,5 @@
-#ifndef PE_CPP // Note include guards, this is a quick and dirty way to include components
-#define PE_CPP 
+#ifndef DMA_CPP // Note include guards, this is a quick and dirty way to include components
+#define DMA_CPP 
 
 #include "systemc.h"
 #include "map"
@@ -83,11 +83,17 @@ struct DMA : public sc_module
     {
       if (descriptors[execute_index].state == DmaState::TRANSFER)
       {
-        std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Transfering data" << std::endl;
-        if (direction == DmaDirection::MM2S)
-          stream.write(*(ram + current_ram_index));  // Memory to Stream
-        else
-          *(ram + current_ram_index) = stream.read();  // Stream to Memory
+        if (direction == DmaDirection::MM2S)  // Memory to Stream
+        {
+          float value = *(ram + current_ram_index);
+          std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Transfering [" << value << "] from RAM to stream" << std::endl;
+          stream.write(value);
+        }
+        else  // Stream to Memory
+        {
+          std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Transfering [" << stream.read() << "] from stream to RAM" << std::endl;
+          *(ram + current_ram_index) = stream.read();
+        }
 
         // update ram index
         current_ram_index += descriptors[execute_index].x_modify;
@@ -130,32 +136,21 @@ struct DMA : public sc_module
 // DMA module definition for MM2MM
 struct DMA_MM2MM : public sc_module
 {
-	// Control Signals
-	sc_in<bool> clk, reset, enable;
-
 	// stream interconnect
 	sc_signal<float,SC_MANY_WRITERS> stream;
 
 	// DMA devices
-	DMA *mm2s, *s2mm;
+	DMA mm2s, s2mm;
 
 	// Constructor
-	DMA_MM2MM(sc_module_name name, DMA& mm2s_in, DMA& s2mm_in, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable)
+	DMA_MM2MM(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source, float* _ram_destination) :
+    mm2s((std::string(name) + "_internal_mm2s").c_str(), DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, stream),
+    s2mm((std::string(name) + "_internal_s2mm").c_str(), DmaDirection::S2MM, _clk, _reset, _enable, _ram_destination, stream)
 	{
-		// Point to DMA devices
-		mm2s = &mm2s_in;
-		s2mm = &s2mm_in;
-
-		// connect signals
-		this->clk(_clk);
-		this->reset(_reset);
-		this->enable(_enable);
-
 		std::cout << "Module : " << name << " has been instantiated" << std::endl;
 	}
 
 	SC_HAS_PROCESS(DMA_MM2MM);
 };
 
-
-#endif
+#endif  // DMA_CPP

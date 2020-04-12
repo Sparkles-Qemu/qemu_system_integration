@@ -50,23 +50,6 @@ int sc_main(int argc, char *argv[])
 	test.reset(reset);
 	test.stream(stream);
 
-	// DMA_MM2MM instantiation
-	DMA dma_s2mm("dma_s2mm", DmaDirection::S2MM, clk, reset, enable, ram, stream);
-	DMA dma_mm2s("dma_mm2s", DmaDirection::MM2S, clk, reset, enable, ram, stream);
-	dma_s2mm.descriptors.push_back(d1);
-        dma_s2mm.descriptors.push_back(d2);
-        dma_s2mm.descriptors.push_back(d3);
-        dma_s2mm.descriptors.push_back(d4);
-	dma_mm2s.descriptors.push_back(d1);
-        dma_mm2s.descriptors.push_back(d2);
-        dma_mm2s.descriptors.push_back(d3);
-        dma_mm2s.descriptors.push_back(d4);
-
-	DMA_MM2MM dma_mm2mm("dma_mm2mm", dma_s2mm, dma_mm2s, clk, reset, enable);
-	
-	dma_mm2mm.mm2s->print_descriptors();
-	dma_mm2mm.s2mm->print_descriptors();
-
 	sc_start();//1, SC_NS); // Run Test
 
 	return 0;
