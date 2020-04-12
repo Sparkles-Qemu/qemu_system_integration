@@ -44,9 +44,6 @@ void dma_test::stimulus()
 		// Run 5 cycles then set reset low again
 		for (i = 0; i <= 5; i++)
 		{
-			clk.write(1);
-			sc_start(1, SC_NS);
-			clk.write(0);
 			sc_start(1, SC_NS);
 		};
 		// Deassert reset to begin initial transfer
