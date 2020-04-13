@@ -1,12 +1,17 @@
 #include "systemc.h"
 #include "DMA.cpp"
-#include "DMAtb.h"
 
 using std::cout;
 using std::endl;
 
-#define MAX_RESET_CYCLES 10
-#define MAX_SIM_CYCLES 20
+#define RAM_SIZE 20
+
+void print_ram(float* ram, int size)
+{
+	for (int i = 0; i < size; i++)
+		std::cout << *(ram + i) << " ";
+	std::cout << "\n\n";
+}
 
 /**
  * @brief Simulation entry point note sc_main not main.... 
@@ -21,38 +26,54 @@ int sc_main(int argc, char *argv[])
 	sc_signal<bool> clk("clk"); 
 	sc_signal<bool> reset("reset"); 
 	sc_signal<bool> enable("enable"); 
-	sc_signal<float, SC_MANY_WRITERS> stream("stream");	// AC_MANY_WRITERS allows stream to have numerous drivers, (dma and dma_test)
 	
 	// RAM representing external Memory
-	float ram[100];
+	float ram_s[RAM_SIZE], ram_d[RAM_SIZE] = {0};
 
-	// Fill ram with 1-100
+	// Fill source ram with 1-100
 	int i;
-	for (i = 0; i < 100; i++)
-		ram[i] = i;
+	for (i = 0; i < RAM_SIZE; i++)
+		ram_s[i] = i + 1;
 
-	// DMA for MM2S S2MM instantiation
-	DMA dma_temp("dma_temp", DmaDirection::MM2S, clk, reset, enable, ram, stream);
-	Descriptor d1 = {1, 0, DmaState::SUSPENDED, 3, 1}; // Test Suspended State
-	Descriptor d2 = {2, 50, DmaState::WAIT, 5, 2};     // Test Waiting State
-	Descriptor d3 = {3, 10, DmaState::TRANSFER, 2, 10};// Test Standard access
-	Descriptor d4 = {0, 89, DmaState::TRANSFER, 11, 1};// This should overflow ram
-	dma_temp.descriptors.push_back(d1);
-	dma_temp.descriptors.push_back(d2);
-	dma_temp.descriptors.push_back(d3);
-	dma_temp.descriptors.push_back(d4);
-	dma_temp.print_descriptors();
-	
-	// DMA MM2S and S2MM Testbench
-	dma_test test("dma_test", dma_temp, ram);
-	test.clk(clk);
-	test.enable(enable);
-	test.reset(reset);
-	test.stream(stream);
+	// Instantiate MM2MM DMA
+	DMA_MM2MM dma("dma_mm2mm", clk, reset, enable, ram_s, ram_d);
+	Descriptor desc_mm2s = {0, 0, DmaState::SUSPENDED, RAM_SIZE, 1};
+	Descriptor desc_s2mm_wait = {1, 0, DmaState::SUSPENDED, 1, 1};
+	Descriptor desc_s2mm = {0, 0, DmaState::TRANSFER, RAM_SIZE, 1};
+	dma.mm2s.descriptors.push_back(desc_mm2s);
+	dma.s2mm.descriptors.push_back(desc_s2mm_wait);
+	dma.s2mm.descriptors.push_back(desc_s2mm);
 
-	sc_start();//1, SC_NS); // Run Test
+	std::cout << "\nsource ram: " << std::endl;
+	print_ram(ram_s, RAM_SIZE);
+	std::cout << "destination ram: " << std::endl;
+	print_ram(ram_d, RAM_SIZE);
+
+	clk.write(0);
+	reset.write(0);
+	enable.write(1);
+
+	// reset to initialize
+	reset.write(1);
+	sc_start(1, SC_NS);
+	reset.write(0);
+
+	dma.mm2s.descriptors[0].state = DmaState::TRANSFER;
+	dma.s2mm.descriptors[0].state = DmaState::WAIT;
+
+	// start transfer of data
+	for (i = 0; i < RAM_SIZE + 1; i++)
+	{
+		clk.write(1);
+		sc_start(1, SC_NS);
+		clk.write(0);
+		sc_start(1, SC_NS);
+	}
+
+	std::cout << "\nsource ram: " << std::endl;
+	print_ram(ram_s, RAM_SIZE);
+	std::cout << "destination ram: " << std::endl;
+	print_ram(ram_d, RAM_SIZE);
 
 	return 0;
 }
-
-

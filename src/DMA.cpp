@@ -86,12 +86,12 @@ struct DMA : public sc_module
         if (direction == DmaDirection::MM2S)  // Memory to Stream
         {
           float value = *(ram + current_ram_index);
-          std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Transfering [" << value << "] from RAM to stream" << std::endl;
+          std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << value << "] from RAM to stream" << std::endl;
           stream.write(value);
         }
         else  // Stream to Memory
         {
-          std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Transfering [" << stream.read() << "] from stream to RAM" << std::endl;
+          std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << stream.read() << "] from stream to RAM" << std::endl;
           *(ram + current_ram_index) = stream.read();
         }
 
@@ -99,7 +99,7 @@ struct DMA : public sc_module
         current_ram_index += descriptors[execute_index].x_modify;
       }
       else  // just for debugging, can be removed
-        std::cout << "@ " << sc_time_stamp() << " d" << execute_index << " Waiting..." << std::endl;
+        std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Waiting..." << std::endl;
       
       x_count_remaining--;
 
@@ -144,8 +144,8 @@ struct DMA_MM2MM : public sc_module
 
 	// Constructor
 	DMA_MM2MM(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source, float* _ram_destination) :
-    mm2s((std::string(name) + "_internal_mm2s").c_str(), DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, stream),
-    s2mm((std::string(name) + "_internal_s2mm").c_str(), DmaDirection::S2MM, _clk, _reset, _enable, _ram_destination, stream)
+    mm2s("internal_mm2s", DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, stream),
+    s2mm("internal_s2mm", DmaDirection::S2MM, _clk, _reset, _enable, _ram_destination, stream)
 	{
 		std::cout << "Module : " << name << " has been instantiated" << std::endl;
 	}
