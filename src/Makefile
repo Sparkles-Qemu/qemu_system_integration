@@ -18,6 +18,7 @@ AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 #Edit all these vars to match your sources and targets
 TARGET=
 SRCS=
+SUBDIRS= DMA MultiplyAndAccumulate
 OBJS=
 SUBDIR_OBJS=
 ALL_OBJS= $(OBJS) $(SUBDIR_OBJS) 
@@ -38,6 +39,9 @@ $(TARGET): $(ALL_OBJS)
 		$(CXXLINK) -o $@ $^ $(LIBXX)
 
 subdir_compile:
+		for dir in $(SUBDIRS); do \
+			$(MAKE) -C $$dir; \
+		done
 		
 run_tests:
 
