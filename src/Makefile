@@ -43,6 +43,7 @@ subdir_compile:
 		done
 		
 run_tests:
+		./run_tests.sh
 
 clean_all:
 		for dir in $(SUBDIRS); do \
