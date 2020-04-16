@@ -39,7 +39,7 @@ sim.o: SIM.cpp
 dmatb.o: DMAtb.cpp 
 		$(CXXCOMPILE) -c -o $@ $^
 
-dma.o: DMA.cpp 
+dma.o: DMA.cpp
 		$(CXXCOMPILE) -c -o $@ $^
 
 clean: 
