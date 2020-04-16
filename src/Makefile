@@ -45,5 +45,10 @@ subdir_compile:
 		
 run_tests:
 
+clean_all:
+		for dir in $(SUBDIRS); do \
+			$(MAKE) clean  -C $$dir; \
+		done
+
 clean: 
 		rm $(TARGET) $(OBJS)
