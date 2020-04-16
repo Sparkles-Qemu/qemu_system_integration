@@ -60,7 +60,7 @@ SC_MODULE(dma_test)
 		//cout << "Descriptors: " << dma_in.descriptors[1].x_count << endl;
 
 		// Point to trace file
-		wf = sc_create_vcd_trace_file("./traces/sim_signals.trace");
+		wf = sc_create_vcd_trace_file("sim_signals.trace");
 	
 		// Dump signals
 		sc_trace(wf, clock, "clock");
