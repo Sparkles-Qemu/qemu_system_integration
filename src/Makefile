@@ -4,7 +4,7 @@ DEFAULT_INCLUDES = -I.
 
 prefix=/Users/Student/$(USER)/Sparkles-QEMU/qemu_system_integration/src/systemc
 
-INCLUDES=-I$(prefix)/include
+INCLUDES=-I$(prefix)/include -IDMA -IMultiplyAndAccumulate
 CPPFLAGS= 
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
@@ -16,11 +16,10 @@ LIBTOOL=$(SHELL) $(top_builddir)/libtool
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 
 #Edit all these vars to match your sources and targets
-TARGET=
-SRCS=
+TARGET= Processor
 SUBDIRS= DMA MultiplyAndAccumulate
-OBJS=
-SUBDIR_OBJS=
+OBJS= processor.o
+SUBDIR_OBJS= DMA/dma.o MultiplyAndAccumulate/maa.o
 ALL_OBJS= $(OBJS) $(SUBDIR_OBJS) 
 
 CXXCOMPILE=$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CXXFLAGS) $(CXXFLAGS)
