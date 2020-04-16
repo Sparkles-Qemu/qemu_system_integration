@@ -1,4 +1,4 @@
-#include "systemc.h"
+#include <systemc.h>
 #include "DMA.cpp"
 #include "DMAtb.h"
 

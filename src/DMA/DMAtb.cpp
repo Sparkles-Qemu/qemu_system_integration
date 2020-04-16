@@ -1,5 +1,5 @@
 #include "DMA.cpp"
-#include "systemc.h"
+#include <systemc.h>
 #include <cstdlib>
 #include "DMAtb.h"
 

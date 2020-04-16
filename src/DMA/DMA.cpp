@@ -1,7 +1,7 @@
 #ifndef DMA_CPP // Note include guards, this is a quick and dirty way to include components
 #define DMA_CPP 
 
-#include "systemc.h"
+#include <systemc.h>
 #include "map"
 #include "vector"
 #include <string>
@@ -103,7 +103,7 @@ struct DMA : public sc_module
       
       x_count_remaining--;
 
-      if (x_count_remaining == 0)  // descriptor is finished, load next descriptor
+      if (x_count_remaining == (sc_uint<32>)0)  // descriptor is finished, load next descriptor
       {
         execute_index = descriptors[execute_index].next;
         current_ram_index = descriptors[execute_index].start;
