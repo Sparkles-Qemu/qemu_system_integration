@@ -18,7 +18,7 @@ AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 #Edit all these vars to match your sources and targets
 TARGET= Processor
 SUBDIRS= DMA MultiplyAndAccumulate
-OBJS= processor.o
+OBJS= processor.o sim.o
 SUBDIR_OBJS= DMA/dma.o MultiplyAndAccumulate/maa.o
 ALL_OBJS= $(OBJS) $(SUBDIR_OBJS) 
 
@@ -36,6 +36,10 @@ all: $(TARGET)
 
 $(TARGET): $(ALL_OBJS)
 		$(CXXLINK) -o $@ $^ $(LIBXX)
+
+processor.o:
+
+sim.o:
 
 subdir_compile:
 		for dir in $(SUBDIRS); do \
