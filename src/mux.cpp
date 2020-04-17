@@ -5,7 +5,7 @@ SC_MODULE(mux)
 {
     sc_in<bool> clk;
     sc_in<bool> rst;
-    sc_in<sc_int<8>> in;
+    sc_in<sc_int<8> > in;
     const int lines = 8;
     //sc_in<sc_int<8>> lines = 8;
     //sc_core::sc_vector<sc_core::sc_in<sc_int<8>> output_port;
@@ -16,7 +16,7 @@ SC_MODULE(mux)
     void MUX_(){
         init();
         int value = in.read();
-        if(value == -1){
+        if(value > lines){
             for(int i =0;i<lines;i++){
                 op[i].write(1);
             }

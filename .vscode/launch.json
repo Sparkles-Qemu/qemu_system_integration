@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/src/sim",
+            "program": "${workspaceFolder}/src/muxv1",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

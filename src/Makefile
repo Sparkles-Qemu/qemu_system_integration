@@ -1,15 +1,18 @@
+
 WORKING_DIR:=$(shell pwd)
+SOURCE:=muxv1.cpp
+TARGET:=muxv1
 
 all: debug
 
 debug:
-	g++ -g -I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm -Wl,-rpath,./systemc/lib-linux64 mux.cpp tb.cpp main.cpp -o mux
+	g++ -std=c++11 -g -I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm -Wl,-rpath,./systemc/lib-linux64 muxv1.cpp -o $(TARGET)
 release:
-	g++ -I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm -Wl,-rpath,./systemc/lib-linux64 mux.cpp tb.cpp main.cpp -o mux
+	g++ -std=c++11 -I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm -Wl,-rpath,./systemc/lib-linux64 muxv1.cpp  -o $(TARGET)
 clean:
-	rm -rf ./mux
+	rm -rf ./$(TARGET)
 run:
-	./mux
+	./$(TARGET)
 	
 gtkwave:
-	ssh gateway -X gtkwave $(WORKING_DIR)/$(WAVE)
+	ssh gateway -X gtkwave $(WORKING_DIR)/$(WAVE) && echo "exit"
