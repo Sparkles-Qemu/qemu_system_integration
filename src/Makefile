@@ -37,7 +37,8 @@ all: $(TARGET)
 $(TARGET): $(ALL_OBJS)
 		$(CXXLINK) -o $@ $^ $(LIBXX)
 
-processor.o:
+processor.o: Processor.cpp
+		$(CXXCOMPILE) -c -o $@ $^ $(LIBXX)
 
 sim.o:
 
