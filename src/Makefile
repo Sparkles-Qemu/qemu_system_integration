@@ -40,7 +40,8 @@ $(TARGET): $(ALL_OBJS)
 processor.o: Processor.cpp
 		$(CXXCOMPILE) -c -o $@ $^ $(LIBXX)
 
-sim.o:
+sim.o: Sim.cpp
+	$(CXXCOMPILE) -c -o $@ $^ $(LIBXX)
 
 subdir_compile:
 		for dir in $(SUBDIRS); do \
