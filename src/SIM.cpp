@@ -1,6 +1,7 @@
 #include "systemc.h"
 #include "DMA.cpp"
 #include "DMAtb.h"
+#include "LEFT.cpp"
 
 using std::cout;
 using std::endl;
@@ -22,14 +23,24 @@ int sc_main(int argc, char *argv[])
 	sc_signal<bool> reset("reset"); 
 	sc_signal<bool> enable("enable"); 
 	sc_signal<float, SC_MANY_WRITERS> stream("stream");	// AC_MANY_WRITERS allows stream to have numerous drivers, (dma and dma_test)
+
+	clk = 0;
+	reset = 0;
 	
 	// RAM representing external Memory
-	float ram[100];
+	float ram[100], ram1[100], ram2[100], ram3[100];
 
 	// Fill ram with 1-100
 	int i;
 	for (i = 0; i < 100; i++)
 		ram[i] = i;
+
+	cout << "INSTANTIATING LEFT" << endl;
+
+	// LEFT_SIDE implementation
+	LEFT left("left_side", clk, reset, enable, ram, ram1, ram2, ram3);
+
+	cout << "INSTANTIATING DMA TEMP" << endl;
 
 	// DMA for MM2S S2MM instantiation
 	DMA dma_temp("dma_temp", DmaDirection::MM2S, clk, reset, enable, ram, stream);
@@ -50,8 +61,17 @@ int sc_main(int argc, char *argv[])
 	test.reset(reset);
 	test.stream(stream);
 
+
 	sc_start();//1, SC_NS); // Run Test
 
+
+	for(i = 0; i < 100; i++)
+	{
+		clk.write(1);
+		sc_start(1,SC_NS);
+		clk.write(0);
+		sc_start(1,SC_NS);
+	}
 	return 0;
 }
 
