@@ -10,8 +10,9 @@ struct MUX : public sc_module
 	sc_in<bool> clk;
 	sc_in<bool> reset;
 	sc_in<float> input;
-	sc_in<sc_uint<2>> select;
 	sc_out<float> out1, out2, out3;
+
+	sc_uint<2> select;
 	
 	void update()
 	{
@@ -29,20 +30,28 @@ struct MUX : public sc_module
 		// Write To Selected Output
 		else{
 			// Write Selected Ouput
-			switch (select.read()){
-				case 0 : out1.write(input);
-				case 1 : out2.write(input);
-				case 2 : out3.write(input);
+			switch (select){
+				case 0 :
+					out1.write(input);
+					break;
+				case 1 :
+					out2.write(input);
+					break;
+				case 2 :
+					out3.write(input);
+					break;
 				// Default writes all ports if we need
-				default: out1.write(input);
-					 out2.write(input);
-					 out3.write(input);
+				default:
+					out1.write(input);
+					out2.write(input);
+					out3.write(input);
+					break;
 			}
 		}
 	}
 
 	// Constructor
-	MUX(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, sc_signal<sc_uint<2>>& _select, sc_signal<float,SC_MANY_WRITERS>& _input, sc_signal<float,SC_MANY_WRITERS>& _out1, sc_signal<float,SC_MANY_WRITERS>& _out2, sc_signal<float,SC_MANY_WRITERS>& _out3)
+	MUX(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, sc_signal<float,SC_MANY_WRITERS>& _input, sc_signal<float,SC_MANY_WRITERS>& _out1, sc_signal<float,SC_MANY_WRITERS>& _out2, sc_signal<float,SC_MANY_WRITERS>& _out3)
 	{
 		SC_METHOD(update);
 		sensitive << reset;
@@ -51,7 +60,6 @@ struct MUX : public sc_module
 		// Connect Signals
 		this->clk(_clk);
 		this->reset(_reset);
-		this->select(_select);
 		this->input(_input);
 		this->out1(_out1);
 		this->out2(_out2);

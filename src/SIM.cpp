@@ -26,7 +26,8 @@ int sc_main(int argc, char *argv[])
 
 	clk = 0;
 	reset = 0;
-	
+	enable = 0;
+
 	// RAM representing external Memory
 	float ram[100], ram1[100], ram2[100], ram3[100];
 
@@ -54,25 +55,10 @@ int sc_main(int argc, char *argv[])
 	dma_temp.descriptors.push_back(d4);
 	dma_temp.print_descriptors();
 	
-	// DMA MM2S and S2MM Testbench
-	dma_test test("dma_test", dma_temp, ram);
-	test.clk(clk);
-	test.enable(enable);
-	test.reset(reset);
-	test.stream(stream);
-
-
 	sc_start();//1, SC_NS); // Run Test
 
-
-	for(i = 0; i < 100; i++)
-	{
-		clk.write(1);
-		sc_start(1,SC_NS);
-		clk.write(0);
-		sc_start(1,SC_NS);
-	}
 	return 0;
+
 }
 
 
