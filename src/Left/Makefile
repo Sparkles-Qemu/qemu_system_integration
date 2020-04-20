@@ -8,7 +8,7 @@ INCLUDES=-I$(prefix)/include -I../DMA
 CPPFLAGS= 
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
-LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm
+LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm -Wl,-rpath,../systemc/lib-linux64
 
 #edit top_builddir: this var should point to systemc folder
 top_builddir = ../systemc
@@ -16,8 +16,11 @@ LIBTOOL=$(SHELL) $(top_builddir)/libtool
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 
 #Edit all these vars to match your sources and targets
-TARGET=SIM
-OBJS=left.o sim.o
+TARGET= sim
+SUBDIRS= ../DMA
+OBJS= left.o sim.o
+SUBDIR_OBJS= ../DMA/dma.o
+ALL_OBJS= $(OBJS) $(SUBDIR_OBJS) 
 
 CXXCOMPILE=$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CXXFLAGS) $(CXXFLAGS)
 			 			 	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -28,9 +31,9 @@ CXXLINK=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 																									$(LDFLAGS)
 
 #If you have more than .o file make sure to added below and in the OBJS var
-all: $(TARGET)
+all: subdir_compile $(TARGET)
 
-$(TARGET): $(OBJS)
+$(TARGET): $(ALL_OBJS)
 		$(CXXCOMPILE) -o $@ $^ $(LIBXX)
 
 sim.o: Sim.cpp
@@ -38,6 +41,11 @@ sim.o: Sim.cpp
 
 left.o: LEFT.cpp
 		$(CXXCOMPILE) -c -o $@ $^
+
+subdir_compile:
+		for dir in $(SUBDIRS); do \
+			$(MAKE) -C $$dir; \
+		done
 
 clean: 
 		rm $(TARGET) $(OBJS)
