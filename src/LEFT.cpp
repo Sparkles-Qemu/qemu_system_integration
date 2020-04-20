@@ -22,8 +22,7 @@ SC_MODULE(LEFT)
 	sc_signal<float,SC_MANY_WRITERS> mux_out2;
 	sc_signal<float,SC_MANY_WRITERS> mux_out3;
 
-	// Mux and Select
-	sc_signal<sc_uint<2>> select;
+	// Mux
 	MUX mux1;
 
 	// Stream to Memories
