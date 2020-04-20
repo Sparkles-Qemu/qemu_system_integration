@@ -56,7 +56,7 @@ struct DMA : public sc_module
   // Prints descriptor list, useful for debugging
   void print_descriptors()
   {
-    for (int i = 0; i < descriptors.size(); i++)
+    for (uint i = 0; i < descriptors.size(); i++)
     {
       std::cout << "Descriptor " << i << std::endl;
       std::cout << "next: " << descriptors[i].next << std::endl;
@@ -76,7 +76,7 @@ struct DMA : public sc_module
       execute_index = 0;
       current_ram_index = descriptors[execute_index].start;
       x_count_remaining = descriptors[execute_index].x_count;
-      descriptors[execute_index].state == DmaState::SUSPENDED;  // slightly cheating here, but does what we want
+      descriptors[execute_index].state = DmaState::SUSPENDED;  // slightly cheating here, but does what we want
       std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Module has been reset" << std::endl;
     } 
     else if (enable.read() && (descriptors[execute_index].state != DmaState::SUSPENDED))

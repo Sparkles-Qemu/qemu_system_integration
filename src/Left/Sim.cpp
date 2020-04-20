@@ -1,4 +1,5 @@
-#include"Left.cpp"
+#include <systemc.h>
+#include "LEFT.cpp"
 
 
 int sc_main(int argc, char *argv[])

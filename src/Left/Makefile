@@ -2,13 +2,13 @@ CXX=g++ -std=c++11
 DEFS=-DPACKAGE_NAME=\"systemc\" -DPACKAGE_TARNAME=\"systemc\" -DPACKAGE_VERSION=\"2.3.0\" -DPACKAGE_STRING=\"systemc\ 2.3.0\" -DPACKAGE_BUGREPORT=\"\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\"
 DEFAULT_INCLUDES = -I.
 
-prefix=/Users/Student/$(USER)/Sparkles-QEMU/qemu_system_integration/src/systemc
+prefix=../systemc
 
-INCLUDES=-I$(prefix)/include
+INCLUDES=-I$(prefix)/include -I../DMA
 CPPFLAGS= 
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
-LIBXX=-L/Users/Student/$(USER)/Sparkles-QEMU/qemu_system_integration/src/systemc/lib-linux64 -lsystemc -lm
+LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm
 
 #edit top_builddir: this var should point to systemc folder
 top_builddir = ../systemc
@@ -31,9 +31,9 @@ CXXLINK=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-		$(CXXLINK) -o $@ $^ $(LIBXX)
+		$(CXXCOMPILE) -o $@ $^ $(LIBXX)
 
-sim.o: SIM.cpp
+sim.o: Sim.cpp
 		$(CXXCOMPILE) -c -o $@ $^
 
 left.o: LEFT.cpp
