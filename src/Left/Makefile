@@ -8,7 +8,7 @@ INCLUDES=-I$(prefix)/include -I../DMA
 CPPFLAGS= 
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
-LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm -Wl,-rpath,../systemc/lib-linux64
+LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm -Wl,-rpath,../systemc/lib-linux64  # need -Wl for dynamic linking
 
 #edit top_builddir: this var should point to systemc folder
 top_builddir = ../systemc
@@ -31,7 +31,7 @@ CXXLINK=$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 																									$(LDFLAGS)
 
 #If you have more than .o file make sure to added below and in the OBJS var
-all: subdir_compile $(TARGET)
+all: subdir_compile $(TARGET)  # subdir_compile is a dependency here, to compile any other modules used beforehand
 
 $(TARGET): $(ALL_OBJS)
 		$(CXXCOMPILE) -o $@ $^ $(LIBXX)

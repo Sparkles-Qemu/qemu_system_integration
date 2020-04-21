@@ -8,7 +8,7 @@ INCLUDES=-I$(prefix)/include
 CPPFLAGS= 
 AM_CXXFLAGS=-Wall -DSC_INCLUDE_FX -O3
 CXXFLAGS=-g -O2
-LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm -Wl,-rpath,../systemc/lib-linux64
+LIBXX=-L$(prefix)/lib-linux64 -lsystemc -lm -Wl,-rpath,../systemc/lib-linux64  # need -Wl for dynamic linking
 
 #edit top_builddir: this var should point to systemc folder
 top_builddir = ../systemc
