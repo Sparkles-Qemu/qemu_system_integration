@@ -6,7 +6,7 @@
 #include <DMA.cpp>
 #include <maa.cpp>
 
-SC_MODULE(COMPUTE_BRANCH)
+SC_MODULE(PE_GROUP)
 {
 	// Stream from MM2S to S2MMs
 	sc_in<float> psumIn;
@@ -26,13 +26,13 @@ SC_MODULE(COMPUTE_BRANCH)
             psumOut.write(0);
         } else if (enable.read() == 1) {
             interPsumSignals[0] = psumIn.read();
-            psumOut.write(interPsumSignals[peArraySize+1]);
+            psumOut.write(interPsumSignals[peArraySize]);
         }
     }
 
 	// constructor for sc_vector use
-	COMPUTE_BRANCH(sc_module_name name) : dma_mm2s("COMPUTE_BRANCH_DMA")	{
-		std::cout << "Module: " << name << " COMPUTE_BRANCH has been instantiated with empty constructor" << std::endl;
+	PE_GROUP(sc_module_name name) : dma_mm2s("PE_GROUP_DMA")	{
+		std::cout << "Module: " << name << " PE_GROUP has been instantiated with empty constructor" << std::endl;
 
     	SC_METHOD(update);
 	        dont_initialize();
@@ -43,7 +43,7 @@ SC_MODULE(COMPUTE_BRANCH)
 
 	
 	// Constructor with init list of components
-	COMPUTE_BRANCH(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source, unsigned int arraySize):
+	PE_GROUP(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source, unsigned int arraySize):
 		interPsumSignals("interPsumSignals", arraySize+1), // note > peArraySize
 		peArray("peArray", arraySize),
 		dma_mm2s("external_mm2pixelInBus", DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, pixelInBus)
@@ -74,7 +74,59 @@ SC_MODULE(COMPUTE_BRANCH)
 		
 	}
 
-	SC_HAS_PROCESS(COMPUTE_BRANCH);
+	SC_HAS_PROCESS(PE_GROUP);
+
+};
+
+SC_MODULE(PE_CLOUD)
+{
+	// Stream from MM2S to S2MMs
+	sc_in<float> psumIn;
+  	sc_in<bool> clk, reset, enable;
+	sc_out<float> psumOut;
+
+	const unsigned int groupCount = 3;
+
+	sc_vector<sc_signal<float> > interGroupSignals;
+
+	PE_GROUP group0;
+	PE_GROUP group1;
+	PE_GROUP group2;
+
+    void update() {
+        if(reset.read() == 1) {
+            psumOut.write(0);
+        } else if (enable.read() == 1) {
+            interGroupSignals[0] = psumIn.read();
+            psumOut.write(interGroupSignals[groupCount]);
+        }
+    }
+
+	// Constructor with init list of components
+	PE_CLOUD(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source):
+		interGroupSignals("interGroupSignals", groupCount+1), // note > peArraySize
+		group0(name, _clk, _reset, _enable, interGroupSignals[0], interGroupSignals[1], _ram_source, 3),
+		group1(name, _clk, _reset, _enable, interGroupSignals[1], interGroupSignals[2], _ram_source, 3),
+		group2(name, _clk, _reset, _enable, interGroupSignals[2], interGroupSignals[0], _ram_source, 3)		
+	{
+		psumIn(_psumIn);
+
+		clk(_clk);
+		reset(_reset);
+		enable(_enable);
+
+		psumOut(_psumOut);
+
+		std::cout << "Module: " << name << " has been instantiated" << std::endl;
+
+    	SC_METHOD(update);
+	        dont_initialize();
+	        sensitive << clk.pos();
+	        sensitive << reset;
+		
+	}
+
+	SC_HAS_PROCESS(PE_CLOUD);
 
 };
 
@@ -85,41 +137,32 @@ SC_MODULE(RIGHT)
 	sc_out<float> streamOut;
 	const unsigned int branchCount = 9;
 	sc_vector<sc_signal<float> > interComputeBranchPsum;
-	COMPUTE_BRANCH branch00;
-	COMPUTE_BRANCH branch01;
-	COMPUTE_BRANCH branch02;
-	COMPUTE_BRANCH branch10;
-	COMPUTE_BRANCH branch11;
-	COMPUTE_BRANCH branch12;
-	COMPUTE_BRANCH branch20;
-	COMPUTE_BRANCH branch21;
-	COMPUTE_BRANCH branch22;    
+
+	PE_CLOUD branch0;
+	PE_CLOUD branch1;
+	PE_CLOUD branch2;
 
 	void update() {
         if(reset.read() == 1) {
             streamOut.write(0);
         } else if (enable.read() == 1) {
             interComputeBranchPsum[0] = 0;
-            streamOut.write(interComputeBranchPsum[branchCount+1]);
+            streamOut.write(interComputeBranchPsum[branchCount]);
         }
     }
 
 	// Constructor with init list of components
-	RIGHT(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source0, float* _ram_source1, float* _ram_source2, sc_signal<float>& _streamOut) : \
+	RIGHT(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source0, float* _ram_source1, float* _ram_source2, sc_signal<float>& _streamOut) : 
 		interComputeBranchPsum("interComputeBranchPsum", branchCount+1),
-		branch00("branch00", _clk,  _reset,  _enable, interComputeBranchPsum[0], interComputeBranchPsum[1],  _ram_source0, 3),
-		branch01("branch01", _clk,  _reset,  _enable, interComputeBranchPsum[1], interComputeBranchPsum[2],  _ram_source0, 3),
-		branch02("branch02", _clk,  _reset,  _enable, interComputeBranchPsum[2], interComputeBranchPsum[3],  _ram_source0, 3),
-		branch10("branch10", _clk,  _reset,  _enable, interComputeBranchPsum[3], interComputeBranchPsum[4],  _ram_source1, 3),
-		branch11("branch11", _clk,  _reset,  _enable, interComputeBranchPsum[4], interComputeBranchPsum[5],  _ram_source1, 3),
-		branch12("branch12", _clk,  _reset,  _enable, interComputeBranchPsum[5], interComputeBranchPsum[6],  _ram_source1, 3),
-		branch20("branch20", _clk,  _reset,  _enable, interComputeBranchPsum[6], interComputeBranchPsum[7],  _ram_source2, 3),
-		branch21("branch21", _clk,  _reset,  _enable, interComputeBranchPsum[7], interComputeBranchPsum[8],  _ram_source2, 3),
-		branch22("branch22", _clk,  _reset,  _enable, interComputeBranchPsum[8], interComputeBranchPsum[9],  _ram_source2, 3)
+		branch0("branch0",  _clk, _reset, _enable, interComputeBranchPsum[0], interComputeBranchPsum[1], _ram_source0),
+		branch1("branch1",  _clk, _reset, _enable, interComputeBranchPsum[1], interComputeBranchPsum[2], _ram_source1),
+		branch2("branch2",  _clk, _reset, _enable, interComputeBranchPsum[2], interComputeBranchPsum[3], _ram_source2)
 	{
 		clk(_clk);
 		reset(_reset);
 		enable(_enable);
+
+		streamOut(_streamOut);
 
     	SC_METHOD(update);
         dont_initialize();
