@@ -29,7 +29,6 @@ struct PE_GROUP : public sc_module
             interPsumSignals[0] = psumIn.read();
             psumOut.write(interPsumSignals[peArraySize]);
         }
-        next_trigger();
     }
 
     void loadWeights(std::vector<float> weights)
@@ -107,9 +106,6 @@ struct PE_CLOUD : public sc_module
             interGroupSignals[0] = psumIn.read();
             psumOut.write(interGroupSignals[groupCount]);
         }
-        next_trigger();
-
-
     }
 
 	SC_HAS_PROCESS(PE_CLOUD);
@@ -166,7 +162,6 @@ struct RIGHT : public sc_module
             interComputeBranchPsum[0] = 0;
             streamOut.write(interComputeBranchPsum[branchCount]);
         }
-        next_trigger();
     }
 
 	// Constructor with init list of components
