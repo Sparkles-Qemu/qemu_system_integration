@@ -1,12 +1,13 @@
 #include <systemc.h>
-#include "DMA.cpp"
-#include "LEFT.cpp"
 #include "Right.cpp"
 
-#define SMALL_RAM_SIZE 10
-#define BIG_RAM_SIZE 3 * SMALL_RAM_SIZE
+#define IMAGE_WIDTH 10
+#define IMAGE_HEIGHT 10
+#define IMAGE_SIZE IMAGE_WIDTH*IMAGE_HEIGHT
+#define WAIT_CYCLES 3
 
 void print_ram(float* ram, int size)
+
 {
 	for (int i = 0; i < size; i++)
 		std::cout << *(ram + i) << " ";
@@ -19,79 +20,49 @@ int sc_main(int argc, char *argv[])
 	sc_signal<bool> reset("reset"); 
 	sc_signal<bool> enable("enable"); 
 	sc_signal<float> stream("stream");	
+  sc_signal<float> stream_out("stream_out");
 	
 	// RAM representing external Memory
-	float ram[BIG_RAM_SIZE], ram1[SMALL_RAM_SIZE] = {0}, ram2[SMALL_RAM_SIZE] = {0}, ram3[SMALL_RAM_SIZE] = {0};
+	float ram[IMAGE_SIZE];
 
+  // Expected values after every clock cycle
+  float expectedValue[] = {0, 0, 0, 0, 0, 0, 0, 198, 726, 771, 816, 861, 906, 951, 996, 1041, 1086, 1131, 1176, 1221, 1266, 1311, 1356, 1401, 1446, 1491, 1536, 1581, 1626, 1671, 1716, 1761, 1806, 1851, 1896, 1941, 1986, 2031, 2076, 2121, 2166, 2211, 2256, 2301, 2346, 2391, 2436, 2481, 2526, 2571, 2616, 2661, 2706, 2751, 2796, 2841, 2886, 2931, 2976, 3021, 3066, 3111, 3156, 3201, 3246, 3291, 3336, 3381, 3426, 3471, 3516, 3561, 3606, 3651, 3696, 3741, 3786, 3831, 3876, 3921, 3966, 4011, 4056, 4101, 4146, 4191};
 	// Fill source ram
-	int i;
-	for (i = 0; i < BIG_RAM_SIZE; i++)
+	for (int i = 0; i < IMAGE_SIZE ; i++)
 		ram[i] = i;
 
 	// instantiate left side of processor
-	LEFT left("left_side", clk, reset, enable, ram, ram1, ram2, ram3);
+  RIGHT right("compute", clk, reset, enable, ram, ram, ram, stream_out);
 
-	// descriptors for source ram
-	Descriptor desc_mm2s = {0, 0, DmaState::TRANSFER, BIG_RAM_SIZE, 1};
-	left.dma_mm2s.descriptors.push_back(desc_mm2s);
+  Descriptor desc_branch00_transfer = {0, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  right.branch0.group0.dma_mm2s.descriptors.push_back(desc_branch00_transfer);
+  right.branch0.group1.dma_mm2s.descriptors.push_back(desc_branch00_transfer);
+  right.branch0.group2.dma_mm2s.descriptors.push_back(desc_branch00_transfer);
+  
+   
+  // Start simulation 
+  sc_start(0, SC_NS);
 
-	// descriptors for destination ram 1
-	Descriptor desc_s2mm1_wait_before = {1, 0, DmaState::WAIT, 1, 1};
-	Descriptor desc_s2mm1_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1};	
-	Descriptor desc_s2mm1_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
-	left.dma_s2mm1.descriptors.push_back(desc_s2mm1_wait_before);
-	left.dma_s2mm1.descriptors.push_back(desc_s2mm1_transfer);
-	left.dma_s2mm1.descriptors.push_back(desc_s2mm1_sus_after);
+  // File to trace down signals  
+  sc_trace_file *wf = sc_create_vcd_trace_file("compute side");
+  sc_trace(wf, enable, "enable");
+  sc_trace(wf, reset, "reset");
+  sc_trace(wf, clk, "clk");
+  sc_trace(wf, stream_out, "output");
 
-	// descriptors for destination ram 2
-	Descriptor desc_s2mm2_wait_before = {1, 0, DmaState::WAIT, 1 + SMALL_RAM_SIZE, 1};
-	Descriptor desc_s2mm2_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1};	
-	Descriptor desc_s2mm2_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
-	left.dma_s2mm2.descriptors.push_back(desc_s2mm2_wait_before);
-	left.dma_s2mm2.descriptors.push_back(desc_s2mm2_transfer);
-	left.dma_s2mm2.descriptors.push_back(desc_s2mm2_sus_after);
+  // Start test bench 
+  enable.write(1);
 
-	// descriptors for destination ram 3
-	Descriptor desc_s2mm3_wait_before = {1, 0, DmaState::WAIT, 1 + 2 * SMALL_RAM_SIZE, 1};
-	Descriptor desc_s2mm3_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1};	
-	Descriptor desc_s2mm3_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
-	left.dma_s2mm3.descriptors.push_back(desc_s2mm3_wait_before);
-	left.dma_s2mm3.descriptors.push_back(desc_s2mm3_transfer);
-	left.dma_s2mm3.descriptors.push_back(desc_s2mm3_sus_after);
+  for(int k = 0; k < IMAGE_SIZE; ++k) {
 
-	std::cout << "\nsource ram: " << std::endl;
-	print_ram(ram, BIG_RAM_SIZE);
-	std::cout << "destination ram 1: " << std::endl;
-	print_ram(ram1, SMALL_RAM_SIZE);
-	std::cout << "destination ram 2: " << std::endl;
-	print_ram(ram2, SMALL_RAM_SIZE);
-	std::cout << "destination ram 3: " << std::endl;
-	print_ram(ram3, SMALL_RAM_SIZE);
+    //Start simulation here
+    clk.write(0);
+    sc_start(1, SC_NS);
+    clk.write(1);
+    sc_start(1, SC_NS);
+    
+  }
 
-	clk.write(0);
-	reset.write(0);
-	enable.write(1);
-
-	// reset to initialize
-	reset.write(1);
-	sc_start(1, SC_NS);
-	reset.write(0);
-
-	// reassign all initial descriptors, must be done after a reset
-	left.dma_mm2s.descriptors[0].state = DmaState::TRANSFER;
-	left.dma_s2mm1.descriptors[0].state = DmaState::WAIT;
-	left.dma_s2mm2.descriptors[0].state = DmaState::WAIT;
-	left.dma_s2mm3.descriptors[0].state = DmaState::WAIT;
-
-	// start transfer of data
-	for (i = 0; i < BIG_RAM_SIZE + 1; i++)
-	{
-		clk.write(1);
-		sc_start(1, SC_NS);
-		clk.write(0);
-		sc_start(1, SC_NS);
-	}
-
-	return 0;
+  return 0;
 
 }

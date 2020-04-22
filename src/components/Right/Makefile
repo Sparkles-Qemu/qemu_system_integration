@@ -18,7 +18,7 @@ all: clean $(TARGET)
 	$(CXXCOMPILE) -c -o $@  $<
 
 $(TARGET): $(OBJS)
-	$(CXXCOMPILE) $^ -o $@
+	$(CXXCOMPILE) $^ -g -o $@
 
 RUN_TB: $(TARGET)
 	./sim
