@@ -53,6 +53,9 @@ struct DMA : public sc_module
   sc_uint<32> current_ram_index;
   sc_uint<32> x_count_remaining;
 
+  const Descriptor default_descriptor = {0, 0, DmaState::SUSPENDED, 0, 0};
+
+
   // Prints descriptor list, useful for debugging
   void print_descriptors()
   {
@@ -67,6 +70,18 @@ struct DMA : public sc_module
     }
   }
 
+  void loadProgram(std::vector<Descriptor> newProgram)
+  {
+    descriptors.clear();
+    for(unsigned int i = 0; i<newProgram.size(); i++)
+    {
+      descriptors.push_back(newProgram[i]);
+    }
+    execute_index = 0;
+    current_ram_index = descriptors[execute_index].start;
+    x_count_remaining = descriptors[execute_index].x_count;
+  }
+
   // Called on rising edge of clk or high level reset
   void update() 
   {
@@ -74,6 +89,8 @@ struct DMA : public sc_module
     {
       // assume at least one descriptor is in dma at all times
       execute_index = 0;
+      descriptors.clear();
+      descriptors.push_back(default_descriptor);
       current_ram_index = descriptors[execute_index].start;
       x_count_remaining = descriptors[execute_index].x_count;
       descriptors[execute_index].state = DmaState::SUSPENDED;  // slightly cheating here, but does what we want
@@ -86,20 +103,23 @@ struct DMA : public sc_module
         if (direction == DmaDirection::MM2S)  // Memory to Stream
         {
           float value = *(ram + current_ram_index);
-          std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << value << "] from RAM to stream" << std::endl;
+          // std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << value << "] from RAM to stream" << std::endl;
           stream.write(value);
         }
         else  // Stream to Memory
         {
-          std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << stream.read() << "] from stream to RAM" << std::endl;
+          // std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << stream.read() << "] from stream to RAM" << std::endl;
           *(ram + current_ram_index) = stream.read();
         }
 
         // update ram index
         current_ram_index += descriptors[execute_index].x_modify;
       }
-      else  // just for debugging, can be removed
-        std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Waiting..." << std::endl;
+      else
+      {
+        stream.write(0);
+        // std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Waiting..." << std::endl;        
+      } // just for debugging, can be removed
       
       x_count_remaining--;
 
@@ -110,11 +130,17 @@ struct DMA : public sc_module
         x_count_remaining = descriptors[execute_index].x_count;
       }
     }
+    else
+    {
+        stream.write(0);
+    }
   }
 
   // Constructor
-  DMA(sc_module_name name, DmaDirection _direction, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset,const sc_signal<bool>& _enable, float* _ram, sc_signal<float,SC_MANY_WRITERS>& _stream)
+  DMA(sc_module_name name, DmaDirection _direction, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset,const sc_signal<bool>& _enable, float* _ram, sc_signal<float,SC_MANY_WRITERS>& _stream) : sc_module(name)
   {
+      // std::cout << "DMA Module: " << name << " attempting to instantiate " << std::endl;
+
       SC_METHOD(update);
         sensitive << reset;
         sensitive << clk.pos();
@@ -127,12 +153,14 @@ struct DMA : public sc_module
       this->ram = _ram;
       this->stream(_stream);
 
-      std::cout << "Module: " << name << " has been instantiated " << std::endl;
+      std::cout << "DMA Module: " << name << " has been instantiated " << std::endl;
   }
 
   // Constructor
-  DMA(sc_module_name name)
+  DMA(sc_module_name name) : sc_module(name)
   {
+      // std::cout << "DMA Module: " << name << " attempting to instantiate " << std::endl;
+
       SC_METHOD(update);
         sensitive << reset;
         sensitive << clk.pos();
@@ -153,7 +181,8 @@ struct DMA_MM2MM : public sc_module
 	DMA mm2s, s2mm;
 
 	// Constructor
-	DMA_MM2MM(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source, float* _ram_destination) :
+	DMA_MM2MM(sc_core::sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source, float* _ram_destination) :
+    sc_module(name),
     mm2s("internal_mm2s", DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, stream),
     s2mm("internal_s2mm", DmaDirection::S2MM, _clk, _reset, _enable, _ram_destination, stream)
 	{

@@ -6,7 +6,8 @@
 
 
 // Module defintion 
-SC_MODULE (mult_accumulate) {
+struct mult_accumulate : public sc_module 
+{
 
     //inputs
     sc_in<bool> clk;
@@ -40,16 +41,18 @@ SC_MODULE (mult_accumulate) {
         cout<<"@"<< sc_time_stamp() << "Output =" << output.read()<<endl;
     }
 
+    SC_HAS_PROCESS(mult_accumulate);
 
     //Constructor for module. This module is pos edge trigger 
-    SC_CTOR(mult_accumulate) {
+    mult_accumulate(sc_module_name name) : sc_module(name), clk("clk"), reset("reset"), enable("enable"), partialSum("partialSum"), pixelIn("pixelIn"), output("output") {
+      // std::cout << "MAC Module " << name << " attempting to instantiate " << std::endl;
 
         SC_METHOD(update);
-            dont_initialize();
             sensitive << clk.pos();
             sensitive << reset;
-        SC_METHOD(monitor);
-            sensitive << output;
+      std::cout << "MAC Module " << name << " instantiated " << std::endl;
     }
+
+
 
 };

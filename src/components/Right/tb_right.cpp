@@ -1,5 +1,6 @@
 #include <systemc.h>
 #include "Right.cpp"
+#include <assert.h>
 
 #define IMAGE_WIDTH 10
 #define IMAGE_HEIGHT 10
@@ -19,29 +20,66 @@ int sc_main(int argc, char *argv[])
 	sc_signal<bool> clk("clk"); 
 	sc_signal<bool> reset("reset"); 
 	sc_signal<bool> enable("enable"); 
-	sc_signal<float> stream("stream");	
+	sc_signal<float> stream_in("stream_in");	
   sc_signal<float> stream_out("stream_out");
+  sc_signal<float> ground("gnd");
 	
-	// RAM representing external Memory
-	float ram[IMAGE_SIZE];
+  float ram0[2*IMAGE_SIZE];
+  float ram1[2*IMAGE_SIZE];
+  float ram2[2*IMAGE_SIZE];
 
-  // Expected values after every clock cycle
-  float expectedValue[] = {0, 0, 0, 0, 0, 0, 0, 198, 726, 771, 816, 861, 906, 951, 996, 1041, 1086, 1131, 1176, 1221, 1266, 1311, 1356, 1401, 1446, 1491, 1536, 1581, 1626, 1671, 1716, 1761, 1806, 1851, 1896, 1941, 1986, 2031, 2076, 2121, 2166, 2211, 2256, 2301, 2346, 2391, 2436, 2481, 2526, 2571, 2616, 2661, 2706, 2751, 2796, 2841, 2886, 2931, 2976, 3021, 3066, 3111, 3156, 3201, 3246, 3291, 3336, 3381, 3426, 3471, 3516, 3561, 3606, 3651, 3696, 3741, 3786, 3831, 3876, 3921, 3966, 4011, 4056, 4101, 4146, 4191};
-	// Fill source ram
-	for (int i = 0; i < IMAGE_SIZE ; i++)
-		ram[i] = i;
-
-	// instantiate left side of processor
-  RIGHT right("compute", clk, reset, enable, ram, ram, ram, stream_out);
-
-  Descriptor desc_branch00_transfer = {0, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
-  right.branch0.group0.dma_mm2s.descriptors.push_back(desc_branch00_transfer);
-  right.branch0.group1.dma_mm2s.descriptors.push_back(desc_branch00_transfer);
-  right.branch0.group2.dma_mm2s.descriptors.push_back(desc_branch00_transfer);
+  float expected_output[64] = {15678, 15813, 15948, 16083, 16218, 16353, 16488, 16623, 17028, 17163, 17298, 17433, 17568, 17703, 17838, 17973, 18378, 18513, 18648, 18783, 18918, 19053, 19188, 19323, 19728, 19863, 19998, 20133, 20268, 20403, 20538, 20673, 21078, 21213, 21348, 21483, 21618, 21753, 21888, 22023, 22428, 22563, 22698, 22833, 22968, 23103, 23238, 23373, 23778, 23913, 24048, 24183, 24318, 24453, 24588, 24723, 25128, 25263, 25398, 25533, 25668, 25803, 25938, 26073};
   
-   
-  // Start simulation 
-  sc_start(0, SC_NS);
+	for (int i = 0; i < IMAGE_SIZE ; i++)
+  {
+    ram0[i] = i+1;
+    ram1[i] = i+1+100;
+    ram2[i] = i+1+200;    
+  }
+
+  RIGHT cloud("compute", clk, reset, enable, ram0, ram1, ram2, stream_out) ;
+
+  //branch0 descriptors
+  Descriptor desc_branch0_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch0_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+  Descriptor desc_branch0_group1_timed_wait = {1, 0, DmaState::WAIT, 5, 1}; // 2
+  Descriptor desc_branch0_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch0_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+  Descriptor desc_branch0_group2_timed_wait = {1, 0, DmaState::WAIT, 10, 1}; // 4
+  Descriptor desc_branch0_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch0_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+  //branch1 descriptors
+  Descriptor desc_branch1_group0_timed_wait = {1, 0, DmaState::WAIT, 17, 1}; // 8
+  Descriptor desc_branch1_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch1_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+
+  Descriptor desc_branch1_group1_timed_wait = {1, 0, DmaState::WAIT, 22, 1};
+  Descriptor desc_branch1_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch1_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+
+  Descriptor desc_branch1_group2_timed_wait = {1, 0, DmaState::WAIT, 27, 1};
+  Descriptor desc_branch1_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch1_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+  //branch2 descriptors
+  Descriptor desc_branch2_group0_timed_wait = {1, 0, DmaState::WAIT, 34, 1};
+  Descriptor desc_branch2_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch2_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+
+  Descriptor desc_branch2_group1_timed_wait = {1, 0, DmaState::WAIT, 39, 1};
+  Descriptor desc_branch2_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch2_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
+
+
+  Descriptor desc_branch2_group2_timed_wait = {1, 0, DmaState::WAIT, 44, 1};
+  Descriptor desc_branch2_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
+  Descriptor desc_branch2_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
   // File to trace down signals  
   sc_trace_file *wf = sc_create_vcd_trace_file("compute side");
@@ -50,17 +88,141 @@ int sc_main(int argc, char *argv[])
   sc_trace(wf, clk, "clk");
   sc_trace(wf, stream_out, "output");
 
-  // Start test bench 
-  enable.write(1);
+  // Start simulation 
+  enable = 0;
+  reset = 1;
+  
+  sc_start(0, SC_NS);
+  
+  reset = 0;
 
-  for(int k = 0; k < IMAGE_SIZE; ++k) {
+  sc_start(1, SC_NS);
+  
+  cloud.branch0.group0.dma_mm2s.loadProgram({desc_branch0_group0_transfer, desc_branch0_group0_suspend});
+  cloud.branch0.group1.dma_mm2s.loadProgram({desc_branch0_group1_timed_wait, desc_branch0_group1_transfer, desc_branch0_group1_suspend});
+  cloud.branch0.group2.dma_mm2s.loadProgram({desc_branch0_group2_timed_wait, desc_branch0_group2_transfer, desc_branch0_group2_suspend});
 
-    //Start simulation here
-    clk.write(0);
-    sc_start(1, SC_NS);
-    clk.write(1);
-    sc_start(1, SC_NS);
+  cloud.branch1.group0.dma_mm2s.loadProgram({desc_branch1_group0_timed_wait, desc_branch1_group0_transfer, desc_branch1_group0_suspend});
+  cloud.branch1.group1.dma_mm2s.loadProgram({desc_branch1_group1_timed_wait, desc_branch1_group1_transfer, desc_branch1_group1_suspend});
+  cloud.branch1.group2.dma_mm2s.loadProgram({desc_branch1_group2_timed_wait, desc_branch1_group2_transfer, desc_branch1_group2_suspend});
+
+  cloud.branch2.group0.dma_mm2s.loadProgram({desc_branch2_group0_timed_wait, desc_branch2_group0_transfer, desc_branch2_group0_suspend});
+  cloud.branch2.group1.dma_mm2s.loadProgram({desc_branch2_group1_timed_wait, desc_branch2_group1_transfer, desc_branch2_group1_suspend});
+  cloud.branch2.group2.dma_mm2s.loadProgram({desc_branch2_group2_timed_wait, desc_branch2_group2_transfer, desc_branch2_group2_suspend});
+
+  cloud.branch0.group0.loadWeights({1,2,3});
+  cloud.branch0.group1.loadWeights({4,5,6});
+  cloud.branch0.group2.loadWeights({7,8,9});
+
+  cloud.branch1.group0.loadWeights({1,2,3});
+  cloud.branch1.group1.loadWeights({4,5,6});
+  cloud.branch1.group2.loadWeights({7,8,9});
+
+  cloud.branch2.group0.loadWeights({1,2,3});
+  cloud.branch2.group1.loadWeights({4,5,6});
+  cloud.branch2.group2.loadWeights({7,8,9});
+
+  stream_in = 0;
+
+  std::cout << "@" << sc_time_stamp() << " Load Pulse " << std::endl;
+
+  clk = 0;
+  sc_start(0.5, SC_NS);
+  clk = 1;
+  sc_start(0.5, SC_NS);
+  enable = 1;
+
+  bool startValidation = false;
+  int expected_output_index = 0;
+  int validCounter = 8;
+  int invalidCounter = 1;
+  for(int k = 0; expected_output_index < 64; ++k) {
     
+    if(!startValidation && expected_output[0] == stream_out)
+    {
+      startValidation = true;
+    }
+
+    if(startValidation)
+    {
+      if(validCounter > 0)
+      {
+        std::cout << "@" << sc_time_stamp() << " stream_out: " << stream_out \
+        << " expected_output: " << expected_output[expected_output_index];
+
+        if(expected_output[expected_output_index] == stream_out)
+        {
+          std::cout << " ....assertion succuess!!" << std::endl;
+          expected_output_index++;
+        }
+        else
+        {
+          std::cout << " ....assertion failure, terminating....!!" << std::endl;
+          break;
+        }
+        validCounter--;
+      }
+      else if(invalidCounter > 0)
+      {
+        std::cout << "@" << sc_time_stamp() << " stream_out: " << stream_out \
+        << " ....ignoring invalid output " << std::endl;
+        invalidCounter--;
+      }
+      else
+      {
+        std::cout << "@" << sc_time_stamp() << " stream_out: " << stream_out \
+        << " ....ignoring invalid output " << std::endl;
+        validCounter = 8;
+        invalidCounter = 1;
+      }
+    }
+
+    clk = 0;
+    sc_start(0.5, SC_NS);
+    clk = 1;
+    sc_start(0.5, SC_NS);
+    
+  }
+
+  if(expected_output_index == 64)
+  {
+    std::cout << "TEST BENCH SUCCESS " << std::endl;
+
+
+    std::cout << "       a$$$$$$$$$$a" << std::endl;
+    std::cout << "     a$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "   a$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "  a$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << " a$$$$$   $$$$$$   $$$$$a" << std::endl;
+    std::cout << "a$$$$$     $$$$     $$$$$a" << std::endl;
+    std::cout << "a$$$$$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "a$$$$$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "a$$$$$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << " a$$$$$$          $$$$$$a" << std::endl;
+    std::cout << "  a$$$$$$        $$$$$$a" << std::endl;
+    std::cout << "   a$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "     a$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "       a$$$$$$$$$$a" << std::endl;
+
+  }
+  else
+  {
+    std::cout << "TEST BENCH FAILURE " << std::endl;
+
+    std::cout << "       a$$$$$$$$$$a" << std::endl;
+    std::cout << "     a$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "   a$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "  a$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << " a$$$$$   $$$$$$   $$$$$a" << std::endl;
+    std::cout << "a$$$$$     $$$$     $$$$$a" << std::endl;
+    std::cout << "a$$$$$$$ $$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "a$$$$$$$ $$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "a$$$$$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << " a$$$$$$          $$$$$$a" << std::endl;
+    std::cout << "  a$$$$  $$$$$$$$  $$$$a" << std::endl;
+    std::cout << "   a$$ $$$$$$$$$$$$ $$a" << std::endl;
+    std::cout << "     a$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "       a$$$$$$$$$$a" << std::endl;
   }
 
   return 0;

@@ -5,8 +5,9 @@
 #include <string>
 #include <DMA.cpp>
 #include <maa.cpp>
+#include <iostream>
 
-SC_MODULE(PE_GROUP)
+struct PE_GROUP : public sc_module 
 {
 	// Stream from MM2S to S2MMs
 	sc_in<float> psumIn;
@@ -30,24 +31,29 @@ SC_MODULE(PE_GROUP)
         }
     }
 
-	// constructor for sc_vector use
-	PE_GROUP(sc_module_name name) : dma_mm2s("PE_GROUP_DMA")	{
-		std::cout << "Module: " << name << " PE_GROUP has been instantiated with empty constructor" << std::endl;
+    void loadWeights(std::vector<float> weights)
+    {
+    	for(unsigned int i = 0; i<peArraySize && i<weights.size(); i++)
+    	{
+    		peArray[i].weight = weights[i];
+    	}
+    }
+
+	SC_HAS_PROCESS(PE_GROUP);
+
+	// Constructor with init list of components
+	PE_GROUP(sc_core::sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source, unsigned int arraySize) : 
+	sc_module(name),
+	interPsumSignals("interPsumSignals", arraySize+1),
+	peArray("peArray", arraySize),
+	dma_mm2s("internal_mm2pixelInBus", DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, pixelInBus)
+	{
+		// std::cout << "PE_GROUP Module: " << name << "attempting to be instantiated" << std::endl;
 
     	SC_METHOD(update);
-	        dont_initialize();
-	        sensitive << clk.pos();
-	        sensitive << reset;
-		
-	}
+        sensitive << clk.pos();
+        sensitive << reset;
 
-	
-	// Constructor with init list of components
-	PE_GROUP(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source, unsigned int arraySize):
-		interPsumSignals("interPsumSignals", arraySize+1), // note > peArraySize
-		peArray("peArray", arraySize),
-		dma_mm2s("external_mm2pixelInBus", DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, pixelInBus)
-	{
 		psumIn(_psumIn);
 		peArraySize = arraySize;
 
@@ -65,20 +71,15 @@ SC_MODULE(PE_GROUP)
 		    peArray[i].output(interPsumSignals[i+1]);
 		}
 		psumOut(_psumOut);
-		std::cout << "Module: " << name << " has been instantiated" << std::endl;
 
-    	SC_METHOD(update);
-	        dont_initialize();
-	        sensitive << clk.pos();
-	        sensitive << reset;
+		std::cout << "PE_GROUP Module: " << name << " has been instantiated" << std::endl;
 		
 	}
 
-	SC_HAS_PROCESS(PE_GROUP);
 
 };
 
-SC_MODULE(PE_CLOUD)
+struct PE_CLOUD : public sc_module 
 {
 	// Stream from MM2S to S2MMs
 	sc_in<float> psumIn;
@@ -102,13 +103,23 @@ SC_MODULE(PE_CLOUD)
         }
     }
 
+	SC_HAS_PROCESS(PE_CLOUD);
+
 	// Constructor with init list of components
-	PE_CLOUD(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source):
-		interGroupSignals("interGroupSignals", groupCount+1), // note > peArraySize
-		group0(name, _clk, _reset, _enable, interGroupSignals[0], interGroupSignals[1], _ram_source, 3),
-		group1(name, _clk, _reset, _enable, interGroupSignals[1], interGroupSignals[2], _ram_source, 3),
-		group2(name, _clk, _reset, _enable, interGroupSignals[2], interGroupSignals[0], _ram_source, 3)		
+	PE_CLOUD(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, const sc_signal<float>& _psumIn, sc_signal<float>& _psumOut, float* _ram_source) : 
+	sc_module(name), 
+	interGroupSignals("interGroupSignals", groupCount+1), 
+	group0("group0", _clk, _reset, _enable, interGroupSignals[0], interGroupSignals[1], _ram_source, 3), 
+	group1("group1", _clk, _reset, _enable, interGroupSignals[1], interGroupSignals[2], _ram_source, 3), 
+	group2("group2", _clk, _reset, _enable, interGroupSignals[2], interGroupSignals[3], _ram_source, 3)		
 	{
+	    // std::cout << "PE_CLOUD Module: " << name << "attempting to be instantiated" << std::endl;
+
+    	SC_METHOD(update);
+        sensitive << clk.pos();
+        sensitive << reset;
+
+
 		psumIn(_psumIn);
 
 		clk(_clk);
@@ -117,25 +128,19 @@ SC_MODULE(PE_CLOUD)
 
 		psumOut(_psumOut);
 
-		std::cout << "Module: " << name << " has been instantiated" << std::endl;
-
-    	SC_METHOD(update);
-	        dont_initialize();
-	        sensitive << clk.pos();
-	        sensitive << reset;
+		std::cout << "PE_CLOUD Module: " << name << " has been instantiated" << std::endl;
 		
 	}
 
-	SC_HAS_PROCESS(PE_CLOUD);
 
 };
 
-SC_MODULE(RIGHT)
+struct RIGHT : public sc_module 
 {
 	// Stream from MM2S to S2MMs
   	sc_in<bool> clk, reset, enable;
 	sc_out<float> streamOut;
-	const unsigned int branchCount = 9;
+	const unsigned int branchCount = 3;
 	sc_vector<sc_signal<float> > interComputeBranchPsum;
 
 	PE_CLOUD branch0;
@@ -152,12 +157,14 @@ SC_MODULE(RIGHT)
     }
 
 	// Constructor with init list of components
-	RIGHT(sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source0, float* _ram_source1, float* _ram_source2, sc_signal<float>& _streamOut) : 
+	RIGHT(sc_core::sc_module_name name, const sc_signal<bool>& _clk, const sc_signal<bool>& _reset, const sc_signal<bool>& _enable, float* _ram_source0, float* _ram_source1, float* _ram_source2, sc_signal<float>& _streamOut) : 
+		sc_module(name),
 		interComputeBranchPsum("interComputeBranchPsum", branchCount+1),
 		branch0("branch0",  _clk, _reset, _enable, interComputeBranchPsum[0], interComputeBranchPsum[1], _ram_source0),
 		branch1("branch1",  _clk, _reset, _enable, interComputeBranchPsum[1], interComputeBranchPsum[2], _ram_source1),
 		branch2("branch2",  _clk, _reset, _enable, interComputeBranchPsum[2], interComputeBranchPsum[3], _ram_source2)
 	{
+	    // std::cout << "RIGHT Module: " << name << "attempting to be instantiated" << std::endl;
 		clk(_clk);
 		reset(_reset);
 		enable(_enable);
@@ -165,11 +172,10 @@ SC_MODULE(RIGHT)
 		streamOut(_streamOut);
 
     	SC_METHOD(update);
-        dont_initialize();
         sensitive << clk.pos();
         sensitive << reset;
 
-		std::cout << "Module: " << name << " has been instantiated" << std::endl;
+		std::cout << "RIGHT Module: " << name << " has been instantiated" << std::endl;
 	}
 	
 	SC_HAS_PROCESS(RIGHT);
