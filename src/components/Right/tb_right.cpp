@@ -43,41 +43,41 @@ int sc_main(int argc, char *argv[])
   Descriptor desc_branch0_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch0_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
-  Descriptor desc_branch0_group1_timed_wait = {1, 0, DmaState::WAIT, 5, 1}; // 2
+  Descriptor desc_branch0_group1_timed_wait = {1, 0, DmaState::WAIT, 3, 1}; // 2
   Descriptor desc_branch0_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch0_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
-  Descriptor desc_branch0_group2_timed_wait = {1, 0, DmaState::WAIT, 10, 1}; // 4
+  Descriptor desc_branch0_group2_timed_wait = {1, 0, DmaState::WAIT, 6, 1}; // 4
   Descriptor desc_branch0_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch0_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
   //branch1 descriptors
-  Descriptor desc_branch1_group0_timed_wait = {1, 0, DmaState::WAIT, 17, 1}; // 8
+  Descriptor desc_branch1_group0_timed_wait = {1, 0, DmaState::WAIT, 9, 1}; // 8
   Descriptor desc_branch1_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch1_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch1_group1_timed_wait = {1, 0, DmaState::WAIT, 22, 1};
+  Descriptor desc_branch1_group1_timed_wait = {1, 0, DmaState::WAIT, 12, 1};
   Descriptor desc_branch1_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch1_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch1_group2_timed_wait = {1, 0, DmaState::WAIT, 27, 1};
+  Descriptor desc_branch1_group2_timed_wait = {1, 0, DmaState::WAIT, 15, 1};
   Descriptor desc_branch1_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch1_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
   //branch2 descriptors
-  Descriptor desc_branch2_group0_timed_wait = {1, 0, DmaState::WAIT, 34, 1};
+  Descriptor desc_branch2_group0_timed_wait = {1, 0, DmaState::WAIT, 18, 1};
   Descriptor desc_branch2_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch2_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch2_group1_timed_wait = {1, 0, DmaState::WAIT, 39, 1};
+  Descriptor desc_branch2_group1_timed_wait = {1, 0, DmaState::WAIT, 21, 1};
   Descriptor desc_branch2_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch2_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch2_group2_timed_wait = {1, 0, DmaState::WAIT, 44, 1};
+  Descriptor desc_branch2_group2_timed_wait = {1, 0, DmaState::WAIT, 24, 1};
   Descriptor desc_branch2_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch2_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 

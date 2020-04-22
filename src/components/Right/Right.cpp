@@ -29,6 +29,7 @@ struct PE_GROUP : public sc_module
             interPsumSignals[0] = psumIn.read();
             psumOut.write(interPsumSignals[peArraySize]);
         }
+        next_trigger();
     }
 
     void loadWeights(std::vector<float> weights)
@@ -51,11 +52,16 @@ struct PE_GROUP : public sc_module
 		// std::cout << "PE_GROUP Module: " << name << "attempting to be instantiated" << std::endl;
 
     	SC_METHOD(update);
-        sensitive << clk.pos();
+        // sensitive << clk.pos();
+        // sensitive << reset;
+
+		peArraySize = arraySize;
+
+        sensitive << interPsumSignals[peArraySize];
+        sensitive << psumIn;
         sensitive << reset;
 
 		psumIn(_psumIn);
-		peArraySize = arraySize;
 
 		clk(_clk);
 		reset(_reset);
@@ -101,6 +107,9 @@ struct PE_CLOUD : public sc_module
             interGroupSignals[0] = psumIn.read();
             psumOut.write(interGroupSignals[groupCount]);
         }
+        next_trigger();
+
+
     }
 
 	SC_HAS_PROCESS(PE_CLOUD);
@@ -116,9 +125,11 @@ struct PE_CLOUD : public sc_module
 	    // std::cout << "PE_CLOUD Module: " << name << "attempting to be instantiated" << std::endl;
 
     	SC_METHOD(update);
-        sensitive << clk.pos();
+        // sensitive << clk.pos();
+        // sensitive << reset;
+        sensitive << interGroupSignals[groupCount];
+        sensitive << psumIn;
         sensitive << reset;
-
 
 		psumIn(_psumIn);
 
@@ -150,10 +161,12 @@ struct RIGHT : public sc_module
 	void update() {
         if(reset.read() == 1) {
             streamOut.write(0);
+            interComputeBranchPsum[0] = 0;
         } else if (enable.read() == 1) {
             interComputeBranchPsum[0] = 0;
             streamOut.write(interComputeBranchPsum[branchCount]);
         }
+        next_trigger();
     }
 
 	// Constructor with init list of components
@@ -172,7 +185,10 @@ struct RIGHT : public sc_module
 		streamOut(_streamOut);
 
     	SC_METHOD(update);
-        sensitive << clk.pos();
+        // sensitive << clk.pos();
+        // sensitive << reset;
+
+        sensitive << interComputeBranchPsum[branchCount];
         sensitive << reset;
 
 		std::cout << "RIGHT Module: " << name << " has been instantiated" << std::endl;
