@@ -1,11 +1,13 @@
 #include <systemc.h>
 #include "Right.cpp"
-#include <assert.h>
+#include "LEFT.cpp"
 
 #define IMAGE_WIDTH 10
 #define IMAGE_HEIGHT 10
 #define IMAGE_SIZE IMAGE_WIDTH*IMAGE_HEIGHT
-#define WAIT_CYCLES 3
+#define SMALL_RAM_SIZE IMAGE_SIZE 
+#define BIG_RAM_SIZE 3 * IMAGE_SIZE
+#define MEMORY_PADDING 100
 
 void print_ram(float* ram, int size)
 
@@ -24,60 +26,79 @@ int sc_main(int argc, char *argv[])
   sc_signal<float> stream_out("stream_out");
   sc_signal<float> ground("gnd");
 	
-  float ram0[2*IMAGE_SIZE];
-  float ram1[2*IMAGE_SIZE];
-  float ram2[2*IMAGE_SIZE];
+  float ramSource[BIG_RAM_SIZE+MEMORY_PADDING] = {0};
+  float ram0[SMALL_RAM_SIZE+MEMORY_PADDING] = {0};
+  float ram1[SMALL_RAM_SIZE+MEMORY_PADDING] = {0};
+  float ram2[SMALL_RAM_SIZE+MEMORY_PADDING] = {0};
 
   float expected_output[64] = {15678, 15813, 15948, 16083, 16218, 16353, 16488, 16623, 17028, 17163, 17298, 17433, 17568, 17703, 17838, 17973, 18378, 18513, 18648, 18783, 18918, 19053, 19188, 19323, 19728, 19863, 19998, 20133, 20268, 20403, 20538, 20673, 21078, 21213, 21348, 21483, 21618, 21753, 21888, 22023, 22428, 22563, 22698, 22833, 22968, 23103, 23238, 23373, 23778, 23913, 24048, 24183, 24318, 24453, 24588, 24723, 25128, 25263, 25398, 25533, 25668, 25803, 25938, 26073};
   
-	for (int i = 0; i < IMAGE_SIZE ; i++)
+	for (int i = 0; i < BIG_RAM_SIZE ; i++)
   {
-    ram0[i] = i+1;
-    ram1[i] = i+1+100;
-    ram2[i] = i+1+200;    
+    ramSource[i] = i+1;
   }
 
   RIGHT cloud("compute", clk, reset, enable, ram0, ram1, ram2, stream_out) ;
+  LEFT left("mem_heirarchy", clk, reset, enable, ramSource, ram0, ram1, ram2);
+
+    // descriptors for source ram
+  Descriptor desc_mm2s = {0, 0, DmaState::TRANSFER, BIG_RAM_SIZE, 1};
+
+  // descriptors for destination ram 1
+  Descriptor desc_s2mm1_wait_before = {1, 0, DmaState::WAIT, 1, 1};
+  Descriptor desc_s2mm1_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1}; 
+  Descriptor desc_s2mm1_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
+
+  // descriptors for destination ram 2
+  Descriptor desc_s2mm2_wait_before = {1, 0, DmaState::WAIT, 1 + SMALL_RAM_SIZE, 1};
+  Descriptor desc_s2mm2_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1}; 
+  Descriptor desc_s2mm2_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
+
+  // descriptors for destination ram 3
+  Descriptor desc_s2mm3_wait_before = {1, 0, DmaState::WAIT, 1 + 2 * SMALL_RAM_SIZE, 1};
+  Descriptor desc_s2mm3_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1}; 
+  Descriptor desc_s2mm3_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
 
   //branch0 descriptors
+  Descriptor desc_branch0_group0_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE, 1}; // 2
   Descriptor desc_branch0_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch0_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
-  Descriptor desc_branch0_group1_timed_wait = {1, 0, DmaState::WAIT, 3, 1}; // 2
+  Descriptor desc_branch0_group1_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 3, 1}; // 2
   Descriptor desc_branch0_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch0_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
-  Descriptor desc_branch0_group2_timed_wait = {1, 0, DmaState::WAIT, 6, 1}; // 4
+  Descriptor desc_branch0_group2_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 6, 1}; // 4
   Descriptor desc_branch0_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch0_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
   //branch1 descriptors
-  Descriptor desc_branch1_group0_timed_wait = {1, 0, DmaState::WAIT, 9, 1}; // 8
+  Descriptor desc_branch1_group0_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 9, 1}; // 8
   Descriptor desc_branch1_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch1_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch1_group1_timed_wait = {1, 0, DmaState::WAIT, 12, 1};
+  Descriptor desc_branch1_group1_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 12, 1};
   Descriptor desc_branch1_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch1_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch1_group2_timed_wait = {1, 0, DmaState::WAIT, 15, 1};
+  Descriptor desc_branch1_group2_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 15, 1};
   Descriptor desc_branch1_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch1_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
   //branch2 descriptors
-  Descriptor desc_branch2_group0_timed_wait = {1, 0, DmaState::WAIT, 18, 1};
+  Descriptor desc_branch2_group0_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 18, 1};
   Descriptor desc_branch2_group0_transfer = {2, 0, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch2_group0_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch2_group1_timed_wait = {1, 0, DmaState::WAIT, 21, 1};
+  Descriptor desc_branch2_group1_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 21, 1};
   Descriptor desc_branch2_group1_transfer = {2, 10, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch2_group1_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
 
-  Descriptor desc_branch2_group2_timed_wait = {1, 0, DmaState::WAIT, 24, 1};
+  Descriptor desc_branch2_group2_timed_wait = {1, 0, DmaState::WAIT, BIG_RAM_SIZE + 24, 1};
   Descriptor desc_branch2_group2_transfer = {2, 20, DmaState::TRANSFER, IMAGE_SIZE, 1};
   Descriptor desc_branch2_group2_suspend = {2, 0, DmaState::SUSPENDED, 0, 1};
 
@@ -87,9 +108,6 @@ int sc_main(int argc, char *argv[])
   sc_trace(wf, reset, "reset");
   sc_trace(wf, clk, "clk");
   sc_trace(wf, stream_out, "output");
-  sc_trace(wf, cloud.interComputeBranchPsum[1], "cloud.interComputeBranchPsum[1]");
-  sc_trace(wf, cloud.interComputeBranchPsum[2], "cloud.interComputeBranchPsum[2]");
-  sc_trace(wf, cloud.interComputeBranchPsum[3], "cloud.interComputeBranchPsum[3]");
 
   // Start simulation 
   enable = 0;
@@ -100,8 +118,14 @@ int sc_main(int argc, char *argv[])
   reset = 0;
 
   sc_start(1, SC_NS);
+
+    // load descriptors
+  left.dma_mm2s.loadProgram({desc_mm2s});
+  left.dma_s2mm1.loadProgram({desc_s2mm1_wait_before, desc_s2mm1_transfer, desc_s2mm1_sus_after});
+  left.dma_s2mm2.loadProgram({desc_s2mm2_wait_before, desc_s2mm2_transfer, desc_s2mm2_sus_after});
+  left.dma_s2mm3.loadProgram({desc_s2mm3_wait_before, desc_s2mm3_transfer, desc_s2mm3_sus_after});
   
-  cloud.branch0.group0.dma_mm2s.loadProgram({desc_branch0_group0_transfer, desc_branch0_group0_suspend});
+  cloud.branch0.group0.dma_mm2s.loadProgram({desc_branch0_group0_timed_wait, desc_branch0_group0_transfer, desc_branch0_group0_suspend});
   cloud.branch0.group1.dma_mm2s.loadProgram({desc_branch0_group1_timed_wait, desc_branch0_group1_transfer, desc_branch0_group1_suspend});
   cloud.branch0.group2.dma_mm2s.loadProgram({desc_branch0_group2_timed_wait, desc_branch0_group2_transfer, desc_branch0_group2_suspend});
 
@@ -135,13 +159,25 @@ int sc_main(int argc, char *argv[])
   sc_start(0.5, SC_NS);
 
   enable = 1;
+  
+  std::cout << "@" << sc_time_stamp() << " Transfer Start " << std::endl;
+  
+  for (int i = 0; i < BIG_RAM_SIZE + 1; i++)
+  {
+    clk = 1;
+    sc_start(0.5, SC_NS);
+    clk = 0;
+    sc_start(0.5, SC_NS);
+  }
+
+  std::cout << "@" << sc_time_stamp() << " Transfer Complete " << std::endl;
 
   bool startValidation = false;
   int expected_output_index = 0;
   int validCounter = 8;
   int invalidCounter = 1;
   for(int k = 0; expected_output_index < 64; ++k) {
-
+    
     clk = 1;
     sc_start(0.5, SC_NS);
 
@@ -195,15 +231,15 @@ int sc_main(int argc, char *argv[])
 
 
     std::cout << "       a$$$$$$$$$$a" << std::endl;
-    std::cout << "     a$$$$$$$$$$$$$$a" << std::endl;
-    std::cout << "   a$$$$$$$$$$$$$$$$$$a" << std::endl;
-    std::cout << "  a$$$$$$$$$$$$$$$$$$$$a" << std::endl;
+    std::cout << "     a$$          $$a" << std::endl;
+    std::cout << "   a$$  $$$$$$$$$$  $$a" << std::endl;
+    std::cout << "  a$$$$$$$$$$$$$$$$$$$a" << std::endl;
     std::cout << " a$$$$$   $$$$$$   $$$$$a" << std::endl;
     std::cout << "a$$$$$     $$$$     $$$$$a" << std::endl;
     std::cout << "a$$$$$$$$$$$$$$$$$$$$$$$$a" << std::endl;
     std::cout << "a$$$$$$$$$$$$$$$$$$$$$$$$a" << std::endl;
-    std::cout << "a$$$$$$    $$$$    $$$$$$a" << std::endl;
-    std::cout << " a$$$$$$   $$$$   $$$$$$$a" << std::endl;
+    std::cout << "a$$$$$$   $$ $$    $$$$$$$a" << std::endl;
+    std::cout << " a$$$$$$  $$ $$   $$$$$$$a" << std::endl;
     std::cout << "  a$$$$$$        $$$$$$a" << std::endl;
     std::cout << "   a$$$$$$$$$$$$$$$$$$a" << std::endl;
     std::cout << "     a$$$$$$$$$$$$$$a" << std::endl;
