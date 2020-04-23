@@ -115,11 +115,12 @@ struct DMA : public sc_module
         // update ram index
         current_ram_index += descriptors[execute_index].x_modify;
       }
-      else
+      else  // Waiting state
       {
-        stream.write(0);
+        if (direction == DmaDirection::MM2S)  // clear stream only for MMM2S
+          stream.write(0);
         // std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Waiting..." << std::endl;        
-      } // just for debugging, can be removed
+      }
       
       x_count_remaining--;
 
@@ -130,8 +131,9 @@ struct DMA : public sc_module
         x_count_remaining = descriptors[execute_index].x_count;
       }
     }
-    else
+    else  // Suspended state
     {
+      if (direction == DmaDirection::MM2S)  // clear stream only for MMM2S
         stream.write(0);
     }
   }

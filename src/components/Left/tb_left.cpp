@@ -32,31 +32,21 @@ int sc_main(int argc, char *argv[])
 
 	// descriptors for source ram
 	Descriptor desc_mm2s = {0, 0, DmaState::TRANSFER, BIG_RAM_SIZE, 1};
-	left.dma_mm2s.descriptors.push_back(desc_mm2s);
 
 	// descriptors for destination ram 1
 	Descriptor desc_s2mm1_wait_before = {1, 0, DmaState::WAIT, 1, 1};
 	Descriptor desc_s2mm1_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1};	
 	Descriptor desc_s2mm1_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
-	left.dma_s2mm1.descriptors.push_back(desc_s2mm1_wait_before);
-	left.dma_s2mm1.descriptors.push_back(desc_s2mm1_transfer);
-	left.dma_s2mm1.descriptors.push_back(desc_s2mm1_sus_after);
 
 	// descriptors for destination ram 2
 	Descriptor desc_s2mm2_wait_before = {1, 0, DmaState::WAIT, 1 + SMALL_RAM_SIZE, 1};
 	Descriptor desc_s2mm2_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1};	
 	Descriptor desc_s2mm2_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
-	left.dma_s2mm2.descriptors.push_back(desc_s2mm2_wait_before);
-	left.dma_s2mm2.descriptors.push_back(desc_s2mm2_transfer);
-	left.dma_s2mm2.descriptors.push_back(desc_s2mm2_sus_after);
 
 	// descriptors for destination ram 3
 	Descriptor desc_s2mm3_wait_before = {1, 0, DmaState::WAIT, 1 + 2 * SMALL_RAM_SIZE, 1};
 	Descriptor desc_s2mm3_transfer = {2, 0, DmaState::TRANSFER, SMALL_RAM_SIZE, 1};	
 	Descriptor desc_s2mm3_sus_after = {0, 0, DmaState::SUSPENDED, 0, 1};
-	left.dma_s2mm3.descriptors.push_back(desc_s2mm3_wait_before);
-	left.dma_s2mm3.descriptors.push_back(desc_s2mm3_transfer);
-	left.dma_s2mm3.descriptors.push_back(desc_s2mm3_sus_after);
 
 	std::cout << "\nsource ram: " << std::endl;
 	print_ram(ram, BIG_RAM_SIZE);
@@ -69,20 +59,22 @@ int sc_main(int argc, char *argv[])
 
 	clk.write(0);
 	reset.write(0);
-	enable.write(1);
+	enable.write(0);
 
 	// reset to initialize
 	reset.write(1);
-	sc_start(1, SC_NS);
+	sc_start(0, SC_NS);
 	reset.write(0);
+  	sc_start(1, SC_NS);
 
-	// reassign all initial descriptors, must be done after a reset
-	left.dma_mm2s.descriptors[0].state = DmaState::TRANSFER;
-	left.dma_s2mm1.descriptors[0].state = DmaState::WAIT;
-	left.dma_s2mm2.descriptors[0].state = DmaState::WAIT;
-	left.dma_s2mm3.descriptors[0].state = DmaState::WAIT;
+	// load descriptors
+	left.dma_mm2s.loadProgram({desc_mm2s});
+	left.dma_s2mm1.loadProgram({desc_s2mm1_wait_before, desc_s2mm1_transfer, desc_s2mm1_sus_after});
+	left.dma_s2mm2.loadProgram({desc_s2mm2_wait_before, desc_s2mm2_transfer, desc_s2mm2_sus_after});
+	left.dma_s2mm3.loadProgram({desc_s2mm3_wait_before, desc_s2mm3_transfer, desc_s2mm3_sus_after});
 
 	// start transfer of data
+	enable.write(1);
 	for (i = 0; i < BIG_RAM_SIZE + 1; i++)
 	{
 		clk.write(1);
