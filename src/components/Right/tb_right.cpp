@@ -87,6 +87,9 @@ int sc_main(int argc, char *argv[])
   sc_trace(wf, reset, "reset");
   sc_trace(wf, clk, "clk");
   sc_trace(wf, stream_out, "output");
+  sc_trace(wf, cloud.interComputeBranchPsum[1], "cloud.interComputeBranchPsum[1]");
+  sc_trace(wf, cloud.interComputeBranchPsum[2], "cloud.interComputeBranchPsum[2]");
+  sc_trace(wf, cloud.interComputeBranchPsum[3], "cloud.interComputeBranchPsum[3]");
 
   // Start simulation 
   enable = 0;
@@ -126,10 +129,11 @@ int sc_main(int argc, char *argv[])
 
   std::cout << "@" << sc_time_stamp() << " Load Pulse " << std::endl;
 
-  clk = 0;
-  sc_start(0.5, SC_NS);
   clk = 1;
   sc_start(0.5, SC_NS);
+  clk = 0;
+  sc_start(0.5, SC_NS);
+  
   enable = 1;
 
   bool startValidation = false;
@@ -137,7 +141,13 @@ int sc_main(int argc, char *argv[])
   int validCounter = 8;
   int invalidCounter = 1;
   for(int k = 0; expected_output_index < 64; ++k) {
-    
+
+    clk = 1;
+    sc_start(0.5, SC_NS);
+
+    clk = 0;
+    sc_start(0.5, SC_NS);
+
     if(!startValidation && expected_output[0] == stream_out)
     {
       startValidation = true;
@@ -176,11 +186,6 @@ int sc_main(int argc, char *argv[])
         invalidCounter = 1;
       }
     }
-
-    clk = 0;
-    sc_start(0.5, SC_NS);
-    clk = 1;
-    sc_start(0.5, SC_NS);
     
   }
 
