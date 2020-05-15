@@ -137,6 +137,10 @@ int sc_main(int argc, char *argv[])
   enable = 1;
   
   std::cout << "@" << sc_time_stamp() << " Transfer Start " << std::endl;
+  for(int i = 0; i<10; i++)
+  {
+
+  }
   
   for (int i = 0; i < BIG_RAM_SIZE + 1; i++)
   {
@@ -147,6 +151,7 @@ int sc_main(int argc, char *argv[])
   }
 
   std::cout << "@" << sc_time_stamp() << " Transfer Complete " << std::endl;
+
 
   bool startValidation = false;
   int expected_output_index = 0;
