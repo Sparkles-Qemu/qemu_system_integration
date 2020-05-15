@@ -1,4 +1,5 @@
 {
+    "todo-tree.filtering.excludeGlobs": ["**/src/systemc/**"],
     "files.associations": {
         "map": "cpp",
         "iostream": "cpp",
