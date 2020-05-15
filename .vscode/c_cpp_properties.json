@@ -3,17 +3,16 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/src/components/Util/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",
-            "cStandard": "c11",
             "cppStandard": "c++11",
             "intelliSenseMode": "gcc-x64",
             "compilerArgs": [
                 "-I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm -Wl,-rpath,./systemc/lib-linux64"
             ]
-            
         }
     ],
     "version": 4

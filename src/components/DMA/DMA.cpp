@@ -3,6 +3,7 @@
 
 #include <systemc.h>
 #include "map"
+#include "modelutil.cpp"
 #include "vector"
 #include <string>
 #include <iostream>
@@ -14,13 +15,13 @@
 // Coder       : Jacob Londa and Owen Beringer
 //-----------------------------------------------------
 
-enum class DMADirection
+enum class DmaDirection
 {
   MM2S,
   S2MM
 };
 
-enum class DMAState
+enum class DmaState
 {
   SUSPENDED, // do nothing indefinitely
   TRANSFER,  // transfer data
@@ -31,7 +32,7 @@ struct Descriptor
 {
   unsigned int next;     // index of next descriptor
   unsigned int start;    // start index in ram array
-  DMAState state;        // state of dma
+  DmaState state;        // state of dma
   unsigned int x_count;  // number of floats to transfer/wait
   unsigned int x_modify; // number of floats between each transfer/wait
 };
@@ -39,6 +40,7 @@ struct Descriptor
 // DMA module definition for MM2S and S2MM
 struct DMA : public sc_module
 {
+
   // Control Signals
   sc_in<bool> clk, reset, enable;
 
@@ -49,13 +51,11 @@ struct DMA : public sc_module
   // Internal Data
   std::vector<Descriptor> descriptors;
   unsigned int execute_index;
-  DMADirection direction;
+  DmaDirection direction;
   unsigned int current_ram_index;
   unsigned int x_count_remaining;
 
-  
-
-  const Descriptor default_descriptor = {0, 0, DMAState::SUSPENDED, 0, 0};
+  const Descriptor default_descriptor = {0, 0, DmaState::SUSPENDED, 0, 0};
 
   // Prints descriptor list, useful for debugging
   void print_descriptors()
@@ -95,14 +95,14 @@ struct DMA : public sc_module
       descriptors.push_back(default_descriptor);
       current_ram_index = descriptors[execute_index].start;
       x_count_remaining = descriptors[execute_index].x_count;
-      descriptors[execute_index].state = DMAState::SUSPENDED; // slightly cheating here, but does what we want
+      descriptors[execute_index].state = DmaState::SUSPENDED; // slightly cheating here, but does what we want
       std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Module has been reset" << std::endl;
     }
-    else if (enable.read() && (descriptors[execute_index].state != DMAState::SUSPENDED))
+    else if (enable.read() && (descriptors[execute_index].state != DmaState::SUSPENDED))
     {
-      if (descriptors[execute_index].state == DMAState::TRANSFER)
+      if (descriptors[execute_index].state == DmaState::TRANSFER)
       {
-        if (direction == DMADirection::MM2S) // Memory to Stream
+        if (direction == DmaDirection::MM2S) // Memory to Stream
         {
           float value = *(ram + current_ram_index);
           // std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Transfering [" << value << "] from RAM to stream" << std::endl;
@@ -119,7 +119,7 @@ struct DMA : public sc_module
       }
       else // Waiting state
       {
-        if (direction == DMADirection::MM2S) // clear stream only for MMM2S
+        if (direction == DmaDirection::MM2S) // clear stream only for MMM2S
           stream.write(0);
         // std::cout << "@ " << sc_time_stamp() << " " << this->name() << " desc " << execute_index << ": Waiting..." << std::endl;
       }
@@ -135,13 +135,13 @@ struct DMA : public sc_module
     }
     else // Suspended state
     {
-      if (direction == DMADirection::MM2S) // clear stream only for MMM2S
+      if (direction == DmaDirection::MM2S) // clear stream only for MMM2S
         stream.write(0);
     }
   }
 
   // Constructor
-  DMA(sc_module_name name, DMADirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
+  DMA(sc_module_name name, DmaDirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
   {
     // std::cout << "DMA Module: " << name << " attempting to instantiate " << std::endl;
 
@@ -186,8 +186,8 @@ struct DMA_MM2MM : public sc_module
 
   // Constructor
   DMA_MM2MM(sc_core::sc_module_name name, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram_source, float *_ram_destination) : sc_module(name),
-                                                                                                                                                                                     mm2s("internal_mm2s", DMADirection::MM2S, _clk, _reset, _enable, _ram_source, stream),
-                                                                                                                                                                                     s2mm("internal_s2mm", DMADirection::S2MM, _clk, _reset, _enable, _ram_destination, stream)
+                                                                                                                                                                                     mm2s("internal_mm2s", DmaDirection::MM2S, _clk, _reset, _enable, _ram_source, stream),
+                                                                                                                                                                                     s2mm("internal_s2mm", DmaDirection::S2MM, _clk, _reset, _enable, _ram_destination, stream)
   {
     std::cout << "Module: " << name << " has been instantiated" << std::endl;
   }
@@ -199,7 +199,7 @@ struct Descriptor_2D
 {
   unsigned int next;     // index of next descriptor
   unsigned int start;    // start index in ram array
-  DMAState state;        // state of dma
+  DmaState state;        // state of dma
   unsigned int x_count;  // number of floats to transfer/wait
   unsigned int x_modify; // number of floats between each transfer/wait
   unsigned int y_count;  // number of floats to transfer/wait
@@ -218,12 +218,12 @@ struct DMA_2D : public sc_module
   // Internal Data
   std::vector<Descriptor_2D> descriptors;
   unsigned int execute_index;
-  DMADirection direction;
+  DmaDirection direction;
   unsigned int current_ram_index;
   unsigned int x_count_remaining;
   unsigned int y_count_remaining;
 
-  const Descriptor_2D default_descriptor = {0, 0, DMAState::SUSPENDED, 0, 0, 0, 0};
+  const Descriptor_2D default_descriptor = {0, 0, DmaState::SUSPENDED, 0, 0, 0, 0};
 
   // Prints descriptor list, useful for debugging
   void print_descriptors()
@@ -249,7 +249,6 @@ struct DMA_2D : public sc_module
     current_ram_index = descriptors[execute_index].start;
     x_count_remaining = descriptors[execute_index].x_count;
     y_count_remaining = descriptors[execute_index].y_count;
-    
   }
 
   void loadProgram(std::vector<Descriptor_2D> newProgram)
@@ -271,14 +270,39 @@ struct DMA_2D : public sc_module
     return enable.read() == true;
   }
 
-  DMAState getCurrentState()
+  Descriptor_2D currentDescriptor()
+  {
+    return descriptors[execute_index];
+  }
+
+  DmaState getCurrentState()
   {
     return descriptors[execute_index].state;
   }
 
-  //TODO: need to implement 2d indexing logic here 
   void updateCurrentIndex()
   {
+    if (x_count_remaining == 0)
+    {
+      if (y_count_remaining == 0)
+      {
+        std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Invalid DMA State Reached, both counters cannot be zero a check \
+        must have occurred to prevent this, exitting" \
+        << std::endl;
+        exit(-1);
+      }
+      else
+      {
+        current_ram_index += currentDescriptor().y_modify;
+        x_count_remaining = currentDescriptor().x_count;
+        y_count_remaining--;
+      }
+    }
+    else
+    {
+      current_ram_index += currentDescriptor().x_modify;
+      x_count_remaining--;
+    }
   }
 
   bool descriptorComplete()
@@ -303,19 +327,19 @@ struct DMA_2D : public sc_module
     }
     else if (enabled())
     {
-      switch (getCurrentState())
+      switch (currentDescriptor().state)
       {
-      case DMAState::TRANSFER:
+      case DmaState::TRANSFER:
       {
         switch (direction)
         {
-        case DMADirection::MM2S:
+        case DmaDirection::MM2S:
         {
           float dataFromRam = ram[current_ram_index];
           stream.write(dataFromRam);
           break;
         }
-        case DMADirection::S2MM:
+        case DmaDirection::S2MM:
         {
           ram[current_ram_index] = stream.read();
           break;
@@ -328,7 +352,7 @@ struct DMA_2D : public sc_module
         }
         break;
       }
-      case DMAState::WAIT:
+      case DmaState::WAIT:
       {
         updateCurrentIndex();
         if (descriptorComplete())
@@ -337,9 +361,9 @@ struct DMA_2D : public sc_module
         }
         break;
       }
-      case DMAState::SUSPENDED:
+      case DmaState::SUSPENDED:
       {
-        if (direction == DMADirection::MM2S) // clear stream only for MMM2S
+        if (direction == DmaDirection::MM2S) // clear stream only for MMM2S
         {
           stream.write(0);
         }
@@ -355,7 +379,7 @@ struct DMA_2D : public sc_module
   }
 
   // Constructor
-  DMA_2D(sc_module_name name, DMADirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
+  DMA_2D(sc_module_name name, DmaDirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
   {
     SC_METHOD(update);
     sensitive << reset;
@@ -369,7 +393,7 @@ struct DMA_2D : public sc_module
     this->ram = _ram;
     this->stream(_stream);
 
-    std::cout << "DMA Module: " << name << " has been instantiated " << std::endl;
+    std::cout << "DMA_2D Module: " << name << " has been instantiated " << std::endl;
   }
 
   // Constructor
@@ -380,7 +404,7 @@ struct DMA_2D : public sc_module
     sensitive << reset;
     sensitive << clk.pos();
 
-    std::cout << "DMA Module: " << name << " has been instantiated with empty constructor" << std::endl;
+    std::cout << "DMA_2D Module: " << name << " has been instantiated " << std::endl;
   }
 
   SC_HAS_PROCESS(DMA);

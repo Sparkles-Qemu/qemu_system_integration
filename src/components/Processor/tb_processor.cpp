@@ -179,7 +179,7 @@ int sc_main(int argc, char *argv[])
 
         if(expected_output[expected_output_index] == processor.streamOut)
         {
-          std::cout << " ....assertion succuess!!" << std::endl;
+          std::cout << " ....assertion succuss!!" << std::endl;
           expected_output_index++;
         }
         else

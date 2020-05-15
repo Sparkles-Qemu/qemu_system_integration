@@ -1,4 +1,4 @@
-#ifndef PROCESSOR_CPP //be carefule here, if there are duplicates used below they won't be used
+#ifndef PROCESSOR_CPP //be careful here, if there are duplicates used below they won't be used
 #define PROCESSOR_CPP
 
 #include <systemc.h>
