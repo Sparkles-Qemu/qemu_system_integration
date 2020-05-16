@@ -204,6 +204,7 @@ struct Descriptor_2D
   unsigned int x_modify; // number of floats between each transfer/wait
   unsigned int y_count;  // number of floats to transfer/wait
   unsigned int y_modify; // number of floats between each transfer/wait
+
 };
 
 struct DMA_2D : public sc_module
