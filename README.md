@@ -72,9 +72,7 @@ https://github.com/Xilinx/libsystemctlm-soc
 
 
 # Target Architecture
-![Project Architecture](https://i.imgur.com/vADGod5.jpg)
-![PE CLOUD Breakdown](https://i.imgur.com/La8M2mf.png)
-![PE Group](https://i.imgur.com/ggUXeKy.png)
+![Image description](https://i.ibb.co/9Hy3fTs/Project-Design.png)
 
 
 
