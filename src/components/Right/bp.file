@@ -1,0 +1,4 @@
+break tb_right.cpp:19
+break /Users/Grad/asultan/Documents/micro/project/qemu_system_integration/src/components/Right/tb_right.cpp:32
+break /Users/Grad/asultan/Documents/micro/project/qemu_system_integration/src/components/Right/tb_right.cpp:39
+break Right.cpp:39
