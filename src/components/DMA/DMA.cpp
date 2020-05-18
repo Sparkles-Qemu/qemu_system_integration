@@ -204,7 +204,6 @@ struct Descriptor_2D
   unsigned int x_modify; // number of floats between each transfer/wait
   unsigned int y_count;  // number of floats to transfer/wait
   unsigned int y_modify; // number of floats between each transfer/wait
-
 };
 
 struct DMA_2D : public sc_module
@@ -246,7 +245,6 @@ struct DMA_2D : public sc_module
 
   void resetInternalCounters()
   {
-    execute_index = 0;
     current_ram_index = descriptors[execute_index].start;
     x_count_remaining = descriptors[execute_index].x_count;
     y_count_remaining = descriptors[execute_index].y_count;
@@ -264,6 +262,7 @@ struct DMA_2D : public sc_module
   {
     descriptors.clear();
     descriptors.push_back(default_descriptor);
+    execute_index = 0;
   }
 
   bool enabled()
@@ -283,16 +282,10 @@ struct DMA_2D : public sc_module
 
   void updateCurrentIndex()
   {
+    x_count_remaining--;
     if (x_count_remaining == 0)
     {
-      if (y_count_remaining == 0)
-      {
-        std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Invalid DMA State Reached, both counters cannot be zero a check \
-        must have occurred to prevent this, exitting" \
-        << std::endl;
-        exit(-1);
-      }
-      else
+      if (y_count_remaining != 0)
       {
         current_ram_index += currentDescriptor().y_modify;
         x_count_remaining = currentDescriptor().x_count;
@@ -302,8 +295,8 @@ struct DMA_2D : public sc_module
     else
     {
       current_ram_index += currentDescriptor().x_modify;
-      x_count_remaining--;
     }
+    
   }
 
   bool descriptorComplete()
@@ -317,6 +310,19 @@ struct DMA_2D : public sc_module
     resetInternalCounters();
   }
 
+  std::string convertDirectionToString(DmaDirection dir)
+  {
+    if(dir == DmaDirection::MM2S)
+    {
+      return "MM2S";
+    }
+    else
+    {
+      return "S2MM";
+    }
+    
+  }
+
   // Called on rising edge of clk or high level reset
   void update()
   {
@@ -324,7 +330,7 @@ struct DMA_2D : public sc_module
     {
       resetProgramMemory();
       resetInternalCounters();
-      std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Module has been reset" << std::endl;
+      std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
     }
     else if (enabled())
     {
@@ -394,21 +400,20 @@ struct DMA_2D : public sc_module
     this->ram = _ram;
     this->stream(_stream);
 
-    std::cout << "DMA_2D Module: " << name << " has been instantiated " << std::endl;
+    std::cout << "DMA_2D MODULE: " << name << " has been instantiated " << std::endl;
   }
 
   // Constructor
   DMA_2D(sc_module_name name) : sc_module(name)
   {
-    // std::cout << "DMA Module: " << name << " attempting to instantiate " << std::endl;
     SC_METHOD(update);
     sensitive << reset;
     sensitive << clk.pos();
 
-    std::cout << "DMA_2D Module: " << name << " has been instantiated " << std::endl;
+    std::cout << "DMA_2D MODULE: " << name << " has been instantiated " << std::endl;
   }
 
-  SC_HAS_PROCESS(DMA);
+  SC_HAS_PROCESS(DMA_2D);
 };
 
 #endif // DMA_CPP

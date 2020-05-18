@@ -7,17 +7,17 @@ CXXFLAGS=-std=c++11 -g -Wall
 LIBXX=-I$(SYSC_PATH)/include -L$(SYSC_PATH)/lib-linux64 -lsystemc -Wl,-rpath,$(SYSC_PATH)/lib-linux64  # need -Wl for dynamic linking
 
 #Edit all these vars to match your sources and targets
-TARGET= tb_dma
-OBJS= tb_dma.o
+TARGET= tb
+OBJS= tb_2DDMA.o
 
 CXXCOMPILE=$(CXX) $(INCLUDES) $(CXXFLAGS) $(LIBXX)
 
-all: $(TARGET)  
+all: clean $(TARGET)  
 
 %.o: %.cpp 
 	$(CXXCOMPILE) -c -o $@  $<
 
-$(TARGET): $(OBJS)
+$(TARGET):  $(OBJS)
 	$(CXXCOMPILE) $^ -o $@
 
 RUN_TB: $(TARGET)
