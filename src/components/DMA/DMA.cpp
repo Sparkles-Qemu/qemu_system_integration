@@ -291,6 +291,11 @@ struct DMA_2D : public sc_module
         x_count_remaining = currentDescriptor().x_count;
         y_count_remaining--;
       }
+      else
+      {
+        /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
+      }
+      
     }
     else
     {
