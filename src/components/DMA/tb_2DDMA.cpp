@@ -1,5 +1,5 @@
 #include <systemc.h>
-#include "DMA.cpp"
+#include "DMA_2D.cpp"
 
 using std::cout;
 using std::endl;

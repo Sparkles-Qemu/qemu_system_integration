@@ -1,5 +1,5 @@
-#ifndef DMA_CPP // Note include guards, this is a quick and dirty way to include components
-#define DMA_CPP
+#ifndef MEM_HIERARCHY_CPP // Note include guards, this is a quick and dirty way to include components
+#define MEM_HIERARCHY_CPP
 
 #include <systemc.h>
 #include "DMA.cpp"
@@ -7,21 +7,31 @@
 #include <string>
 #include <iostream>
 
-using std::vector;
 using std::cout;
 using std::endl;
+using std::vector;
 
-struct MemoryHierarchyNode : public sc_module
+struct MemoryHierarchyLink : public sc_module
 {
   sc_in<bool> clk, reset, enable;
+  sc_in<float> stream;
+  float* node1;
+  float* node2;
 
-  void update()
+  float read(unsigned int index)
   {
 
   }
 
+  void update()
+  {
+  }
+
   // Constructor
-  MemoryHierarchyNode(sc_module_name name, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable) : sc_module(name)
+  MemoryHierarchyLink(sc_module_name name,
+                      const sc_signal<bool> &_clk,
+                      const sc_signal<bool> &_reset,
+                      const sc_signal<bool> &_enable) : sc_module(name)
   {
     SC_METHOD(update);
     sensitive << reset;
@@ -33,14 +43,14 @@ struct MemoryHierarchyNode : public sc_module
   }
 
   // Constructor
-  MemoryHierarchyNode(sc_module_name name) : sc_module(name)
+  MemoryHierarchyLink(sc_module_name name) : sc_module(name)
   {
     SC_METHOD(update);
     sensitive << reset;
     sensitive << clk.pos();
   }
 
-  SC_HAS_PROCESS(MemoryHierarchyNode);
+  SC_HAS_PROCESS(MemoryHierarchyLink);
 };
 
 // struct MemoryHierarchy : public sc_module
@@ -132,13 +142,13 @@ struct MemoryHierarchyNode : public sc_module
 //       {
 //         /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
 //       }
-      
+
 //     }
 //     else
 //     {
 //       current_ram_index += currentDescriptor().x_modify;
 //     }
-    
+
 //   }
 
 //   bool descriptorComplete()
@@ -162,7 +172,7 @@ struct MemoryHierarchyNode : public sc_module
 //     {
 //       return "S2MM";
 //     }
-    
+
 //   }
 
 //   // Called on rising edge of clk or high level reset
@@ -258,4 +268,4 @@ struct MemoryHierarchyNode : public sc_module
 //   SC_HAS_PROCESS(MemoryHierarchy);
 // };
 
-#endif // DMA_CPP
+#endif // MEM_HIERARCHY_CPP

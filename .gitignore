@@ -1,3 +1,5 @@
 # ignore vcd trace files
 *.vcd
 .history/**
+**/tb
+**/*.o
