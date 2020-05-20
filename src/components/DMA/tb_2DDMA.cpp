@@ -364,7 +364,7 @@ void printBreak()
 
 
 int sc_main(int argc, char *argv[])
-{
+{	
 
 	printBreak();
 	std::cout << "Starting 1D Test " << std::endl;
