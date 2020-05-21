@@ -48,7 +48,7 @@ struct DMA_4D : public sc_module
         x_count_remaining = descriptors[execute_index].x_count;
         y_count_remaining = descriptors[execute_index].y_count;
         z_count_remaining = descriptors[execute_index].z_count;
-        k_count_remaining = descriptors[execute_index].k_count;    
+        k_count_remaining = descriptors[execute_index].k_count;
     }
 
     void resetAllInternalCounters()
@@ -57,7 +57,7 @@ struct DMA_4D : public sc_module
         x_count_remaining = descriptors[execute_index].x_count;
         y_count_remaining = descriptors[execute_index].y_count;
         z_count_remaining = descriptors[execute_index].z_count;
-        k_count_remaining = descriptors[execute_index].k_count;    
+        k_count_remaining = descriptors[execute_index].k_count;
     }
 
     void loadProgram(std::vector<Descriptor_4D> newProgram)
@@ -92,36 +92,46 @@ struct DMA_4D : public sc_module
 
     void updateCurrentIndex()
     {
-        if(x_count_remaining != 0)
+        x_count_remaining--;
+        if (x_count_remaining == 0)
         {
-            current_ram_index += currentDescriptor().x_modify;
-            x_count_remaining--;
-        }
-        else if (y_count_remaining != 0)
-        {
-            current_ram_index += currentDescriptor().y_modify;
-            x_count_remaining = currentDescriptor().x_count;
-            y_count_remaining--;
-        }
-        else if(z_count_remaining != 0)
-        {
-            current_ram_index += currentDescriptor().z_modify;
-            x_count_remaining = currentDescriptor().x_count;
-            y_count_remaining = currentDescriptor().y_count;
-            z_count_remaining--;
-        }
-        else if(k_count_remaining != 0)
-        {
-            current_ram_index += currentDescriptor().k_modify;
-            x_count_remaining = currentDescriptor().x_count;
-            y_count_remaining = currentDescriptor().y_count;
-            z_count_remaining = currentDescriptor().z_count;
-            k_count_remaining--;
+            if(y_count_remaining != 0)
+            {
+                y_count_remaining--;
+                current_ram_index += currentDescriptor().y_modify;
+                x_count_remaining = currentDescriptor().x_count;
+            }
+            else
+            {
+                if(z_count_remaining != 0)
+                {
+                    z_count_remaining--;
+                    current_ram_index += currentDescriptor().z_modify;
+                    x_count_remaining = currentDescriptor().x_count;
+                    y_count_remaining = currentDescriptor().y_count;
+                }
+                else
+                {
+                    if(k_count_remaining != 0)
+                    {
+                        k_count_remaining--;
+                        current_ram_index += currentDescriptor().k_modify;
+                        x_count_remaining = currentDescriptor().x_count;
+                        y_count_remaining = currentDescriptor().y_count;
+                        z_count_remaining = currentDescriptor().z_count;
+                    }
+                    else
+                    {
+                        /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
+                    }
+                }
+            }
         }
         else
         {
-            /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
+            current_ram_index += currentDescriptor().x_modify;
         }
+        
     }
 
     bool descriptorComplete()
@@ -132,7 +142,7 @@ struct DMA_4D : public sc_module
     void loadNextDescriptor()
     {
         execute_index = descriptors[execute_index].next;
-        if(currentDescriptor().state == DmaState::TRANSFER_WITH_FORWARD)
+        if (currentDescriptor().state == DmaState::TRANSFER_WITH_FORWARD)
         {
             resetIndexingCounters();
         }
