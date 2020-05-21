@@ -7,7 +7,7 @@
 #include <iostream>
 #include "DMA.cpp"
 
-struct Descriptor_4D
+struct Descriptor_5D
 {
     unsigned int next;     // index of next descriptor
     unsigned int start;    // start index in ram array
@@ -20,9 +20,10 @@ struct Descriptor_4D
     unsigned int z_modify; // number of floats between each transfer/wait
     unsigned int k_count;  // number of floats to transfer/wait
     unsigned int k_modify; // number of floats between each transfer/wait
+    unsigned int e_count;  // number of floats to transfer/wait
+    unsigned int e_modify; // number of floats between each transfer/wait};
 };
-
-struct DMA_4D : public sc_module
+struct DMA_5D : public sc_module
 {
     // Control Signals
     sc_in<bool> clk, reset, enable;
@@ -32,7 +33,7 @@ struct DMA_4D : public sc_module
     sc_inout<float> stream;
 
     // Internal Data
-    std::vector<Descriptor_4D> descriptors;
+    std::vector<Descriptor_5D> descriptors;
     unsigned int execute_index;
     DmaDirection direction;
     unsigned int current_ram_index;
@@ -40,8 +41,9 @@ struct DMA_4D : public sc_module
     unsigned int y_count_remaining;
     unsigned int z_count_remaining;
     unsigned int k_count_remaining;
+    unsigned int e_count_remaining;
 
-    const Descriptor_4D default_descriptor = {0, 0, DmaState::SUSPENDED, 0, 0, 0, 0, 0, 0, 0, 0};
+    const Descriptor_5D default_descriptor = {0, 0, DmaState::SUSPENDED, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     void resetIndexingCounters()
     {
@@ -49,6 +51,7 @@ struct DMA_4D : public sc_module
         y_count_remaining = descriptors[execute_index].y_count;
         z_count_remaining = descriptors[execute_index].z_count;
         k_count_remaining = descriptors[execute_index].k_count;
+        e_count_remaining = descriptors[execute_index].e_count;
     }
 
     void resetAllInternalCounters()
@@ -58,9 +61,10 @@ struct DMA_4D : public sc_module
         y_count_remaining = descriptors[execute_index].y_count;
         z_count_remaining = descriptors[execute_index].z_count;
         k_count_remaining = descriptors[execute_index].k_count;
+        e_count_remaining = descriptors[execute_index].e_count;
     }
 
-    void loadProgram(std::vector<Descriptor_4D> newProgram)
+    void loadProgram(std::vector<Descriptor_5D> newProgram)
     {
         descriptors.clear();
         copy(newProgram.begin(), newProgram.end(), std::back_inserter(descriptors));
@@ -80,7 +84,7 @@ struct DMA_4D : public sc_module
         return enable.read() == true;
     }
 
-    Descriptor_4D currentDescriptor()
+    Descriptor_5D currentDescriptor()
     {
         return descriptors[execute_index];
     }
@@ -90,6 +94,7 @@ struct DMA_4D : public sc_module
         return descriptors[execute_index].state;
     }
 
+    /* Christ on a bicycle this needs to be refactored */ 
     void updateCurrentIndex()
     {
         x_count_remaining--;
@@ -114,15 +119,23 @@ struct DMA_4D : public sc_module
                 {
                     if(k_count_remaining != 0)
                     {
-                        k_count_remaining--;
-                        current_ram_index += currentDescriptor().k_modify;
-                        x_count_remaining = currentDescriptor().x_count;
-                        y_count_remaining = currentDescriptor().y_count;
-                        z_count_remaining = currentDescriptor().z_count;
+
                     }
                     else
                     {
-                        /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
+                        if(e_count_remaining != 0)
+                        {
+                            e_count_remaining--;
+                            current_ram_index += currentDescriptor().e_modify;
+                            x_count_remaining = currentDescriptor().x_count;
+                            y_count_remaining = currentDescriptor().y_count;
+                            z_count_remaining = currentDescriptor().z_count;
+                            k_count_remaining = currentDescriptor().k_count;
+                        }
+                        else
+                        {
+                            /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
+                        }
                     }
                 }
             }
@@ -228,7 +241,7 @@ struct DMA_4D : public sc_module
     }
 
     // Constructor
-    DMA_4D(sc_module_name name, DmaDirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
+    DMA_5D(sc_module_name name, DmaDirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
     {
         SC_METHOD(update);
         sensitive << reset;
@@ -242,20 +255,20 @@ struct DMA_4D : public sc_module
         this->ram = _ram;
         this->stream(_stream);
 
-        std::cout << "DMA_4D MODULE: " << name << " has been instantiated " << std::endl;
+        std::cout << "DMA_5D MODULE: " << name << " has been instantiated " << std::endl;
     }
 
     // Constructor
-    DMA_4D(sc_module_name name) : sc_module(name)
+    DMA_5D(sc_module_name name) : sc_module(name)
     {
         SC_METHOD(update);
         sensitive << reset;
         sensitive << clk.pos();
 
-        std::cout << "DMA_4D MODULE: " << name << " has been instantiated " << std::endl;
+        std::cout << "DMA_5D MODULE: " << name << " has been instantiated " << std::endl;
     }
 
-    SC_HAS_PROCESS(DMA_4D);
+    SC_HAS_PROCESS(DMA_5D);
 };
 
 #endif
