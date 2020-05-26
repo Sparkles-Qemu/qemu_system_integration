@@ -13,15 +13,15 @@ struct Descriptor_5D
     unsigned int start;    // start index in ram array
     DmaState state;        // state of dma
     unsigned int x_count;  // number of floats to transfer/wait
-    unsigned int x_modify; // number of floats between each transfer/wait
+    int x_modify; // number of floats between each transfer/wait
     unsigned int y_count;  // number of floats to transfer/wait
-    unsigned int y_modify; // number of floats between each transfer/wait
+    int y_modify; // number of floats between each transfer/wait
     unsigned int z_count;  // number of floats to transfer/wait
-    unsigned int z_modify; // number of floats between each transfer/wait
+    int z_modify; // number of floats between each transfer/wait
     unsigned int k_count;  // number of floats to transfer/wait
-    unsigned int k_modify; // number of floats between each transfer/wait
+    int k_modify; // number of floats between each transfer/wait
     unsigned int e_count;  // number of floats to transfer/wait
-    unsigned int e_modify; // number of floats between each transfer/wait};
+    int e_modify; // number of floats between each transfer/wait};
 };
 struct DMA_5D : public sc_module
 {
@@ -119,7 +119,11 @@ struct DMA_5D : public sc_module
                 {
                     if(k_count_remaining != 0)
                     {
-
+                        k_count_remaining--;
+                        current_ram_index += currentDescriptor().k_modify;
+                        x_count_remaining = currentDescriptor().x_count;
+                        y_count_remaining = currentDescriptor().y_count;
+                        z_count_remaining = currentDescriptor().z_count;
                     }
                     else
                     {
@@ -144,7 +148,6 @@ struct DMA_5D : public sc_module
         {
             current_ram_index += currentDescriptor().x_modify;
         }
-        
     }
 
     bool descriptorComplete()
