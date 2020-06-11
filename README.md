@@ -72,7 +72,8 @@ https://github.com/Xilinx/libsystemctlm-soc
 
 # QEMU Cross Compile
 
-1) add the following line to your bashrc (on diabase) and source 
+1) add the following line to your bashrc (on diabase) and source bashrc
+
 export PATH=/opt/Xilinx/SDK/2017.4/gnu/aarch64/lin/aarch64-linux/bin:$PATH
 
 2) Add this host to ~/.ssh/config (on diabase)
