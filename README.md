@@ -70,6 +70,22 @@ https://github.com/Xilinx/systemctlm-cosim-demo
 7) Repo for Xilinx libsoc 
 https://github.com/Xilinx/libsystemctlm-soc
 
+# QEMU Cross Compile
+
+1) add the following line to your bashrc (on diabase) and source 
+export PATH=/opt/Xilinx/SDK/2017.4/gnu/aarch64/lin/aarch64-linux/bin:$PATH
+
+2) Add this host to ~/.ssh/config (on diabase)
+
+Host qemu_container
+	User peta
+	Hostname 172.17.0.2
+   
+3) copy ssh key with ssh-copy-id qemu_container 
+
+4) Modify Makefile in qemu_side_project/ to upload requested target to qemu instance. Please note that the qemu instance must be up and running to be able to upload the target.
+
+5) switch to qemu instance (you can also ssh but you need to enter the password twice which is odd) and run target from /home/root
 
 # Target Architecture
 ![Image description](https://i.ibb.co/9Hy3fTs/Project-Design.png)
