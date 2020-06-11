@@ -78,11 +78,11 @@ export PATH=/opt/Xilinx/SDK/2017.4/gnu/aarch64/lin/aarch64-linux/bin:$PATH
 
 2) Add this host to ~/.ssh/config (on diabase)
 
-Host qemu_container
+	Host qemu_container
 
-	User peta
+		User peta
 
-	Hostname 172.17.0.2
+		Hostname 172.17.0.2
    
 3) copy ssh key with ssh-copy-id qemu_container 
 
