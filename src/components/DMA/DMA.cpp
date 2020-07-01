@@ -25,7 +25,7 @@ enum class DmaState
 {
   SUSPENDED, // do nothing indefinitely
   TRANSFER,  // transfer data
-  TRANSFER_WITH_FORWARD,
+  TRANSFER_WITH_COUNTER_FORWARD,
   WAIT       // do nothing for certain number of cycles
 };
 

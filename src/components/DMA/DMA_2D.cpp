@@ -19,10 +19,23 @@ struct Descriptor_2D
     unsigned int y_modify; // number of floats between each transfer/wait
 };
 
+enum class DMA_Program_Phase
+{
+    PHASE_1_WAIT, 
+    PHASE_1_FORWARD,
+    PHASE_1_SAVE,  
+    PHASE_2_WAIT, 
+    PHASE_2_FORWARD,
+    PHASE_2_SAVE 
+};
+
+
 struct DMA_2D : public sc_module
 {
     // Control Signals
-    sc_in<bool> clk, reset, enable;
+    sc_in<bool> clk, reset, enable, program_mode;
+    bool programmed;
+    bool sram_read_init;
 
     // Memory and Stream
     float *ram;
@@ -35,6 +48,15 @@ struct DMA_2D : public sc_module
     unsigned int current_ram_index;
     unsigned int x_count_remaining;
     unsigned int y_count_remaining;
+    unsigned int program_wait_time;
+    unsigned int program_forward_time;
+    unsigned int program_program_size;
+    unsigned int default_wait_time;
+    unsigned int default_forward_time;
+    unsigned int default_program_size;
+    unsigned int default_program_index;
+    unsigned int sram_read_delay;
+    DMA_Program_Phase program_phase;
 
     const Descriptor_2D default_descriptor = {0, 0, DmaState::SUSPENDED, 0, 0, 0, 0};
 
@@ -129,7 +151,7 @@ struct DMA_2D : public sc_module
     void loadNextDescriptor()
     {
         execute_index = descriptors[execute_index].next;
-        if(currentDescriptor().state == DmaState::TRANSFER_WITH_FORWARD)
+        if(currentDescriptor().state == DmaState::TRANSFER_WITH_COUNTER_FORWARD)
         {
             resetIndexingCounters();
         }
@@ -137,6 +159,7 @@ struct DMA_2D : public sc_module
         {
             resetAllInternalCounters();
         }
+        sram_read_init = true; // new descriptor, likely at different starting point (otherwise why bother with new descriptor)
     }
 
     std::string convertDirectionToString(DmaDirection dir)
@@ -151,81 +174,158 @@ struct DMA_2D : public sc_module
         }
     }
 
+    bool programMode()
+    {
+        return program_mode.read() == true;
+    }
+
     // Called on rising edge of clk or high level reset
     void update()
     {
-        if (reset.read())
+        while(true)
         {
-            resetProgramMemory();
-            resetAllInternalCounters();
-            std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
-        }
-        else if (enabled())
-        {
-            switch (currentDescriptor().state)
+            if (reset.read())
             {
-            case DmaState::TRANSFER_WITH_FORWARD:
-            case DmaState::TRANSFER:
+                resetProgramMemory();
+                resetAllInternalCounters();
+                program_phase = DMA_Program_Phase::PHASE_1_WAIT;
+                programmed = true; // TODO: need to change this
+                sram_read_init = true;
+                std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": MODULE has been reset" << std::endl;
+                wait();
+            }
+            else if (programMode() && !programmed)
             {
-                switch (direction)
+                switch(program_phase)
                 {
-                case DmaDirection::MM2S:
-                {
-                    float dataFromRam = ram[current_ram_index];
-                    stream.write(dataFromRam);
+                    case DMA_Program_Phase::PHASE_1_WAIT:
+                    {
+                        wait(default_wait_time);
+                        break;
+                    }
+                    case DMA_Program_Phase::PHASE_1_FORWARD:
+                    {
+                        switch(direction)
+                        {
+                            case DmaDirection::MM2S:
+                            {
+                                if(sram_read_init)
+                                {
+                                    wait(sram_read_delay);
+                                    sram_read_delay = false;
+                                }
+                                else
+                                {
+                                    float dataFromRam = ram[default_program_index];
+                                    stream.write(dataFromRam);
+                                }
+                                break;
+                            }
+                            case DmaDirection::S2MM:
+                            {
+                                ram[default_program_index] = stream.read();
+                                break;
+                            }
+                        }
+                    }
+                    // TODO: Implement rest of programming phases
+                    default:
                     break;
                 }
-                case DmaDirection::S2MM:
+            }
+            else if (enabled() && programmed)
+            {
+                switch (currentDescriptor().state)
                 {
-                    ram[current_ram_index] = stream.read();
+                case DmaState::TRANSFER_WITH_COUNTER_FORWARD:
+                case DmaState::TRANSFER:
+                {
+                    switch (direction)
+                    {
+                    case DmaDirection::MM2S:
+                    {
+                        float dataFromRam = ram[current_ram_index];
+                        stream.write(dataFromRam);
+                        break;
+                    }
+                    case DmaDirection::S2MM:
+                    {
+                        ram[current_ram_index] = stream.read();
+                        break;
+                    }
+                    }
+                    updateCurrentIndex();
+                    if (descriptorComplete())
+                    {
+                        loadNextDescriptor();
+                    }
                     break;
                 }
-                }
-                updateCurrentIndex();
-                if (descriptorComplete())
+                case DmaState::WAIT:
                 {
-                    loadNextDescriptor();
+                    updateCurrentIndex();
+                    if (descriptorComplete())
+                    {
+                        loadNextDescriptor();
+                    }
+                    break;
                 }
-                break;
-            }
-            case DmaState::WAIT:
-            {
-                updateCurrentIndex();
-                if (descriptorComplete())
+                case DmaState::SUSPENDED:
                 {
-                    loadNextDescriptor();
+                    if (direction == DmaDirection::MM2S) // clear stream only for MMM2S
+                    {
+                        stream.write(0);
+                    }
+                    break;
                 }
-                break;
-            }
-            case DmaState::SUSPENDED:
-            {
-                if (direction == DmaDirection::MM2S) // clear stream only for MMM2S
+                default:
                 {
-                    stream.write(0);
+                    std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Is in an invalid state! ... exitting" << std::endl;
+                    exit(-1);
                 }
-                break;
+                }
+                wait();
             }
-            default:
+            else
             {
-                std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Is in an invalid state! ... exitting" << std::endl;
-                exit(-1);
-            }
-            }
+                wait();
+            }            
         }
     }
 
     // Constructor
-    DMA_2D(sc_module_name name, DmaDirection _direction, const sc_signal<bool> &_clk, const sc_signal<bool> &_reset, const sc_signal<bool> &_enable, float *_ram, sc_signal<float, SC_MANY_WRITERS> &_stream) : sc_module(name)
+    DMA_2D(
+            sc_module_name name, 
+            DmaDirection _direction, 
+            const sc_signal<bool> &_clk, 
+            const sc_signal<bool> &_reset, 
+            const sc_signal<bool> &_enable, 
+            const sc_signal<bool> &_program_mode, 
+            float *_ram, 
+            sc_signal<float, SC_MANY_WRITERS> &_stream,
+            unsigned int _default_wait_time,
+            unsigned int _default_forward_time,
+            unsigned int _default_program_size,
+            unsigned int _default_program_index,
+            unsigned int _sram_read_delay
+        ) : sc_module(name)
     {
-        SC_METHOD(update);
+        SC_THREAD(update);
         sensitive << reset;
         sensitive << clk.pos();
+        dont_initialize();
+
+        this->default_wait_time = _default_wait_time;
+        this->default_forward_time = _default_forward_time;
+        this->default_program_size = _default_program_size;
+        this->sram_read_delay = _sram_read_delay;
 
         // connect signals
         this->direction = _direction;
         this->clk(_clk);
         this->reset(_reset);
         this->enable(_enable);
+        this->program_mode(_program_mode);
         this->ram = _ram;
         this->stream(_stream);
 

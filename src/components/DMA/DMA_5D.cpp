@@ -158,7 +158,7 @@ struct DMA_5D : public sc_module
     void loadNextDescriptor()
     {
         execute_index = descriptors[execute_index].next;
-        if (currentDescriptor().state == DmaState::TRANSFER_WITH_FORWARD)
+        if (currentDescriptor().state == DmaState::TRANSFER_WITH_COUNTER_FORWARD)
         {
             resetIndexingCounters();
         }
@@ -193,7 +193,7 @@ struct DMA_5D : public sc_module
         {
             switch (currentDescriptor().state)
             {
-            case DmaState::TRANSFER_WITH_FORWARD:
+            case DmaState::TRANSFER_WITH_COUNTER_FORWARD:
             case DmaState::TRANSFER:
             {
                 switch (direction)

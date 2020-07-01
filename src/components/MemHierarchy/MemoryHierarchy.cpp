@@ -11,6 +11,9 @@ using std::cout;
 using std::endl;
 using std::vector;
 
+// Todo: implement simple memory heirarchy with 2D programmable descriptors 
+// (1 Link) to validate dissemination
+
 struct MemoryHierarchyLink : public sc_module
 {
   sc_in<bool> clk, reset, enable;

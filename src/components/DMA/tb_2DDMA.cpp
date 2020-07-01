@@ -12,12 +12,12 @@ float ram[1000] = {0};
 sc_signal<bool> clk("clk");
 sc_signal<bool> reset("reset");
 sc_signal<bool> enable("enable");
+sc_signal<bool> program_mode("program_mode");
 sc_signal<float, SC_MANY_WRITERS> stream("stream"); // AC_MANY_WRITERS allows stream to have numerous drivers, (dma and dma_test)
 
 // DMA for MM2S S2MM instantiation
-DMA_2D dma_2d_mm2s("DMA_2D_MM2S", DmaDirection::MM2S, clk, reset, enable, ram, stream);
-DMA_2D dma_2d_s2mm("DMA_2D_S2MM", DmaDirection::S2MM, clk, reset, enable, ram, stream);
-
+DMA_2D dma_2d_mm2s("DMA_2D_MM2S", DmaDirection::MM2S, clk, reset, enable, program_mode, ram, stream, 1, 1, 1, 0, 0);
+DMA_2D dma_2d_s2mm("DMA_2D_S2MM", DmaDirection::S2MM, clk, reset, enable, program_mode, ram, stream, 1, 1, 1, 0, 0);
 
 bool run1DTransferTest()
 {
