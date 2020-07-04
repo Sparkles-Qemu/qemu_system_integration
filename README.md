@@ -93,6 +93,8 @@ export PATH=/opt/Xilinx/SDK/2017.4/gnu/aarch64/lin/aarch64-linux/bin:$PATH
 # Target Architecture
 ![Image description](https://i.ibb.co/9Hy3fTs/Project-Design.png)
 
-
-
-
+# How to re-start docker container 
+1.) docker restart name_of_container 
+2.) docker exec -it name_of_container /bin/bash
+3.) Inside the shell type service ssh start
+4.) Should be able to ssh into running container now 
