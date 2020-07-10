@@ -1,28 +1,16 @@
-#ifndef DMA_2D_CPP // Note include guards, this is a quick and dirty way to include components
-#define DMA_2D_CPP
+#ifndef MEMORY_CPP // Note include guards, this is a quick and dirty way to include components
+#define MEMORY_CPP
 
 #include <systemc.h>
 #include "map"
 #include "vector"
 #include <string>
 #include <iostream>
-#include "DMA.cpp"
 
 using std::cout;
 using std::endl;
 using std::vector;
 using std::string;
-
-struct Descriptor_2D
-{
-    unsigned int next;     // index of next descriptor
-    unsigned int start;    // start index in ram array
-    DmaState state;        // state of dma
-    unsigned int x_count;  // number of floats to transfer/wait
-    unsigned int x_modify; // number of floats between each transfer/wait
-    unsigned int y_count;  // number of floats to transfer/wait
-    unsigned int y_modify; // number of floats between each transfer/wait
-};
 
 struct DMA_2D : public sc_module
 {
