@@ -255,7 +255,7 @@ struct MemoryHierarchyLink : public sc_module
 //     this->ram = _ram;
 //     this->stream(_stream);
 
-//     std::cout << "DMA_2D MODULE: " << name << " has been instantiated " << std::endl;
+//     std::cout << "AddressGenerator MODULE: " << name << " has been instantiated " << std::endl;
 //   }
 
 //   // Constructor
@@ -265,7 +265,7 @@ struct MemoryHierarchyLink : public sc_module
 //     sensitive << reset;
 //     sensitive << clk.pos();
 
-//     std::cout << "DMA_2D MODULE: " << name << " has been instantiated " << std::endl;
+//     std::cout << "AddressGenerator MODULE: " << name << " has been instantiated " << std::endl;
 //   }
 
 //   SC_HAS_PROCESS(MemoryHierarchy);

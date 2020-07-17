@@ -109,7 +109,6 @@ struct Memory : public sc_module
                 }
             }
         }
-
     }
 
 
@@ -163,6 +162,215 @@ struct Memory : public sc_module
     }
 
     SC_HAS_PROCESS(Memory);
+};
+
+enum class DescriptorState
+{
+  SUSPENDED, // do nothing indefinitely
+  GENERATE,  // transfer data
+  WAIT       // do nothing for certain number of cycles
+};
+
+struct Descriptor_2D
+{
+    unsigned int next;     // index of next descriptor
+    unsigned int start;    // start index in ram array
+    DescriptorState state;        // state of dma
+    unsigned int x_count;  // number of floats to transfer/wait
+    unsigned int x_modify; // number of floats between each transfer/wait
+    unsigned int y_count;  // number of floats to transfer/wait
+    unsigned int y_modify; // number of floats between each transfer/wait
+};
+
+template <typename DataType>
+struct AddressGenerator : public sc_module
+{
+    // Control Signals
+    sc_in<bool> clk, reset, enable;
+
+    sc_in<DataType> data;
+    sc_out<unsigned int> addr;
+    sc_out<bool> port_enable;
+
+    // Internal Data
+    vector<Descriptor_2D> descriptors;
+    unsigned int execute_index;
+    unsigned int current_ram_index;
+    unsigned int x_count_remaining;
+    unsigned int y_count_remaining;
+
+    const Descriptor_2D default_descriptor = {0, 0, DescriptorState::SUSPENDED, 0, 0, 0, 0};
+
+    void resetIndexingCounters()
+    {
+        x_count_remaining = descriptors[execute_index].x_count;
+        y_count_remaining = descriptors[execute_index].y_count;
+    }
+
+    void resetAllInternalCounters()
+    {
+        current_ram_index = descriptors[execute_index].start;
+        x_count_remaining = descriptors[execute_index].x_count;
+        y_count_remaining = descriptors[execute_index].y_count;
+    }
+
+    void loadProgram(vector<Descriptor_2D> newProgram)
+    {
+        descriptors.clear();
+        copy(newProgram.begin(), newProgram.end(), std::back_inserter(descriptors));
+        execute_index = 0;
+        resetAllInternalCounters();
+    }
+
+    void resetProgramMemory()
+    {
+        descriptors.clear();
+        descriptors.push_back(default_descriptor);
+        execute_index = 0;
+    }
+
+    Descriptor_2D currentDescriptor()
+    {
+        return descriptors[execute_index];
+    }
+
+    void updateCurrentIndex()
+    {
+        x_count_remaining--;
+        if (x_count_remaining == 0)
+        {
+            if (y_count_remaining != 0)
+            {
+                current_ram_index += currentDescriptor().y_modify;
+                x_count_remaining = currentDescriptor().x_count;
+                y_count_remaining--;
+            }
+            else
+            {
+                /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
+            }
+        }
+        else
+        {
+            current_ram_index += currentDescriptor().x_modify;
+        }
+    }
+
+    bool descriptorComplete()
+    {
+        return (x_count_remaining == 0 && y_count_remaining == 0);
+    }
+
+    void loadNextDescriptor()
+    {
+        execute_index = descriptors[execute_index].next;
+        resetAllInternalCounters();
+    }
+
+    // Called on rising edge of clk or high level reset
+    void update()
+    {
+        if (reset.read())
+        {
+            resetProgramMemory();
+            resetAllInternalCounters();
+            std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
+        }
+        else if (enable.read())
+        {
+            switch (currentDescriptor().state)
+            {
+            case DescriptorState::GENERATE:
+            {
+                port_enable.write(true);
+                addr.write(current_ram_index);
+                updateCurrentIndex();
+                if (descriptorComplete())
+                {
+                    loadNextDescriptor();
+                }
+                break;
+            }
+            case DescriptorState::WAIT:
+            {
+                port_enable.write(false);
+                updateCurrentIndex();
+                if (descriptorComplete())
+                {
+                    loadNextDescriptor();
+                }
+                break;
+            }
+            case DescriptorState::SUSPENDED:
+            {
+                port_enable.write(false);
+                break;
+            }
+            default:
+            {
+                std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Is in an invalid state! ... exitting" << std::endl;
+                exit(-1);
+            }
+            }
+        }
+    }
+
+    // Constructor
+    AddressGenerator(sc_module_name name, const GenericControlBus& _control) : sc_module(name)
+    {
+        SC_METHOD(update);
+        sensitive << reset;
+        sensitive << clk.pos();
+
+        // connect signals
+        this->clk(_control.clk);
+        this->reset(_control.reset);
+        this->enable(_control.enable);
+        std::cout << "ADDRESS_GENERATOR MODULE: " << name << " has been instantiated " << std::endl;
+    }
+
+    SC_HAS_PROCESS(AddressGenerator);
+};
+
+//TODO: create generic connector that takes 2 sc_in_interface references and binds them
+// with a sc_signal of whatever type (depending on the ports), the sc_signal should be named
+// and added to the vector 
+
+template <typename DataType>
+struct SAM : public sc_module
+{
+    // Control Signals
+    Memory<DataType> memory;
+    sc_vector<sc_out<DataType>> data_read_ports;
+    sc_vector<sc_in<DataType>> data_write_ports;
+    sc_vector<AddressGenerator<DataType>> address_generators;
+
+    SAM(
+        sc_module_name name,
+        const GenericControlBus& _control,
+        unsigned int _ram_size,
+        unsigned int _read_port_count,
+        unsigned int _write_port_count,
+        /*TODO: add initalizer list for data bus mapping for each generator attached
+        to input port, must include default that connects to default 0th bus*/
+        sc_trace_file *tf) : sc_module(name), \
+        memory("memory", _control, _ram_size, _read_port_count, _write_port_count, tf)
+    {
+
+        data_read_ports.init(_read_port_count, "data_read_port");
+        data_write_ports.init(_write_port_count, "data_write_port");
+
+        /*TODO: use generic connector (instantiated as member here) to hook up
+        address generators*/
+
+        sc_trace(tf, this->clk, (string(this->name()) + string("_clk")));
+        sc_trace(tf, this->reset, (string(this->name()) + string("_reset")));
+        sc_trace(tf, this->mem_enable, (string(this->name()) + string("_mem_enable")));
+
+        cout << "SAM MODULE: " << name << " has been instantiated " << endl;
+    }
+
+    SC_HAS_PROCESS(SAM);
 };
 
 #endif
