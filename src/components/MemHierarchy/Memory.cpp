@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <assert.h>
+#include <Connector.cpp>
 
 using std::cout;
 using std::endl;
@@ -29,7 +30,7 @@ struct GenericCreator
 struct GenericControlBus : public sc_module
 {
     sc_signal<bool> clk, reset, enable;
-    GenericControlBus(sc_module_name name, sc_trace_file *tf) : sc_module(name), clk("clk"), reset("reset"), enable("enable")    
+    GenericControlBus(sc_module_name name, sc_trace_file *tf) : sc_module(name), clk("clk"), reset("reset"), enable("enable")
     {
         sc_trace(tf, this->clk, (string(this->clk.name())));
         sc_trace(tf, this->reset, (string(this->reset.name())));
@@ -39,37 +40,69 @@ struct GenericControlBus : public sc_module
     }
 };
 
-template <typename DataType>
-struct MemoryBus : public sc_module
+enum class MemoryChannelMode
 {
-    sc_signal<DataType> data;
-    sc_signal<unsigned int> addr;
-    sc_signal<bool> enable;
-
-    MemoryBus(sc_module_name name, sc_trace_file *tf) : sc_module(name), data("data"), addr("addr"), enable("enable")
-    {
-        sc_trace(tf, this->data, (string(this->data.name())));
-        sc_trace(tf, this->addr, (string(this->addr.name())));
-        sc_trace(tf, this->enable, (string(this->enable.name())));
-
-        cout << "MEMORY BUS MODULE: " << name << " has been instantiated " << endl;
-    }
+    READ,
+    WRITE,
+    HIGH_IMPEDANCE
 };
 
 template <typename DataType>
-struct Port : public sc_module
+struct MemoryChannel_IF : virtual public sc_interface
 {
-    DataType data;
-    sc_in<unsigned int> addr;
-    sc_in<bool> enabled;
+public:
+    virtual MemoryChannelMode mode() = 0;
+    virtual const sc_vector<DataType>& read_data() = 0;
+    virtual void write_data(const sc_vector<DataType>& _data) = 0;
+    virtual unsigned int addr() = 0; // write a character
+    virtual bool enabled() = 0;
+    virtual void reset() = 0; // empty the stack
+};
 
-    Port(sc_module_name name, sc_trace_file *tf) : sc_module(name), data("data"), addr("addr"), enabled("enabled")
+template <typename DataType>
+struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
+{
+    sc_vector<DataType> data;
+    unsigned int addr;
+    bool enabled;
+    MemoryChannelMode mode;
+
+    MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file* tf) : sc_module(name)
     {
-        sc_trace(tf, this->data, (string(this->data.name())));
-        sc_trace(tf, this->addr, (string(this->addr.name())));
-        sc_trace(tf, this->enabled, (string(this->enabled.name())));
+        data.init("data", width);
+        addr = 0;
+        enabled = false;
+        mode = MemoryChannelMode::HIGH_IMPEDANCE;
+    
+    }
 
-        cout << "MEMORY MODULE: " << name << " has been instantiated " << endl;
+    const sc_vector<DataType>& read_data()
+    {
+        return data;
+    }
+    
+    void write_data(const sc_vector<DataType>& _data)
+    {
+        assert(_data.size() == data.size());
+        for(int i = 0; i<data.size(); i++)
+        {
+            data[i] = _data[i];
+        }
+    }
+
+    unsigned int addr()
+    {
+        return addr;
+    }
+
+    bool enabled()
+    {
+        return enabled;
+    }
+
+    MemoryChannelMode mode()
+    {
+        return mode;
     }
 };
 
@@ -79,12 +112,9 @@ struct Memory : public sc_module
     // Control Signals
     sc_in_clk clk;
     sc_in<bool> reset, mem_enable;
-    vector<DataType> ram;
-    sc_vector<Port<sc_out<DataType>>> read_ports;
-    sc_vector<Port<sc_in<DataType>>> write_ports;
-    sc_vector<MemoryBus<DataType>> read_bus_bundle;
-    sc_vector<MemoryBus<DataType>> write_bus_bundle;
-    
+    sc_vector<sc_vector<DataType>> ram;
+    sc_vector<sc_port<MemoryChannel_IF<DataType>>> channels;
+
     void update()
     {
         if (reset.read())
@@ -111,21 +141,18 @@ struct Memory : public sc_module
         }
     }
 
-
-
     // Constructor
     Memory(
         sc_module_name name,
-        const GenericControlBus& _control,
-        unsigned int _ram_size,
+        const GenericControlBus &_control,
         unsigned int _read_port_count,
         unsigned int _write_port_count,
-        sc_trace_file *tf) : sc_module(name), \
-        ram(_ram_size, 0), \
-        read_ports("read_port"), \
-        write_ports("write_port"), \
-        read_bus_bundle("read_bus"), \
-        write_bus_bundle("write_bus")
+        sc_trace_file *tf) : sc_module(name),
+                             ram("ram", length),
+                             read_ports("read_port"),
+                             write_ports("write_port"),
+                             read_bus_bundle("read_bus"),
+                             write_bus_bundle("write_bus")
     {
         this->clk(_control.clk);
         this->reset(_control.reset);
@@ -136,14 +163,14 @@ struct Memory : public sc_module
         read_bus_bundle.init(_read_port_count, GenericCreator<MemoryBus<DataType>>(tf));
         write_bus_bundle.init(_write_port_count, GenericCreator<MemoryBus<DataType>>(tf));
 
-        for(unsigned int i = 0; i<_read_port_count; i++)
+        for (unsigned int i = 0; i < _read_port_count; i++)
         {
             read_ports.at(i).data(read_bus_bundle.at(i).data);
             read_ports.at(i).addr(read_bus_bundle.at(i).addr);
             read_ports.at(i).enabled(read_bus_bundle.at(i).enable);
         }
 
-        for(unsigned int i = 0; i<_write_port_count; i++)
+        for (unsigned int i = 0; i < _write_port_count; i++)
         {
             write_ports.at(i).data(write_bus_bundle.at(i).data);
             write_ports.at(i).addr(write_bus_bundle.at(i).addr);
@@ -166,16 +193,16 @@ struct Memory : public sc_module
 
 enum class DescriptorState
 {
-  SUSPENDED, // do nothing indefinitely
-  GENERATE,  // transfer data
-  WAIT       // do nothing for certain number of cycles
+    SUSPENDED, // do nothing indefinitely
+    GENERATE,  // transfer data
+    WAIT       // do nothing for certain number of cycles
 };
 
 struct Descriptor_2D
 {
     unsigned int next;     // index of next descriptor
     unsigned int start;    // start index in ram array
-    DescriptorState state;        // state of dma
+    DescriptorState state; // state of dma
     unsigned int x_count;  // number of floats to transfer/wait
     unsigned int x_modify; // number of floats between each transfer/wait
     unsigned int y_count;  // number of floats to transfer/wait
@@ -316,7 +343,7 @@ struct AddressGenerator : public sc_module
     }
 
     // Constructor
-    AddressGenerator(sc_module_name name, const GenericControlBus& _control) : sc_module(name)
+    AddressGenerator(sc_module_name name, const GenericControlBus &_control) : sc_module(name)
     {
         SC_METHOD(update);
         sensitive << reset;
@@ -334,43 +361,6 @@ struct AddressGenerator : public sc_module
 
 //TODO: create generic connector that takes 2 sc_in_interface references and binds them
 // with a sc_signal of whatever type (depending on the ports), the sc_signal should be named
-// and added to the vector 
-
-template <typename DataType>
-struct SAM : public sc_module
-{
-    // Control Signals
-    Memory<DataType> memory;
-    sc_vector<sc_out<DataType>> data_read_ports;
-    sc_vector<sc_in<DataType>> data_write_ports;
-    sc_vector<AddressGenerator<DataType>> address_generators;
-
-    SAM(
-        sc_module_name name,
-        const GenericControlBus& _control,
-        unsigned int _ram_size,
-        unsigned int _read_port_count,
-        unsigned int _write_port_count,
-        /*TODO: add initalizer list for data bus mapping for each generator attached
-        to input port, must include default that connects to default 0th bus*/
-        sc_trace_file *tf) : sc_module(name), \
-        memory("memory", _control, _ram_size, _read_port_count, _write_port_count, tf)
-    {
-
-        data_read_ports.init(_read_port_count, "data_read_port");
-        data_write_ports.init(_write_port_count, "data_write_port");
-
-        /*TODO: use generic connector (instantiated as member here) to hook up
-        address generators*/
-
-        sc_trace(tf, this->clk, (string(this->name()) + string("_clk")));
-        sc_trace(tf, this->reset, (string(this->name()) + string("_reset")));
-        sc_trace(tf, this->mem_enable, (string(this->name()) + string("_mem_enable")));
-
-        cout << "SAM MODULE: " << name << " has been instantiated " << endl;
-    }
-
-    SC_HAS_PROCESS(SAM);
-};
+// and added to the vector
 
 #endif
