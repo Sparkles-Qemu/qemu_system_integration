@@ -109,8 +109,8 @@ struct MemoryChannel_IF : virtual public sc_interface
 public:
     virtual const MemoryChannelMode& mode() = 0;
     virtual void set_mode(MemoryChannelMode mode) = 0;
-    virtual vector<DataType> read_data() = 0;
-    virtual void write_data(const vector<DataType> &_data) = 0;
+    virtual const sc_vector<sc_signal<DataType>>& read_data() = 0;
+    virtual void write_data(const sc_vector<sc_signal<DataType>> & _data) = 0;
     virtual void write_data_element(DataType _data, unsigned int col) = 0;
     virtual unsigned int addr() = 0;
     virtual void set_addr(unsigned int addr) = 0;
@@ -141,20 +141,15 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         // // sc_trace(tf, this->data, (string(this->data.name())));
     }
 
-    vector<DataType> read_data()
+    const sc_vector<sc_signal<DataType>>& read_data()
     {
-        vector<DataType> returnable;
-        for(const auto& data : channel_data)
-        {
-            returnable.push_back(data);
-        }
-        return returnable;
+        return channel_data;
     }
 
-    void write_data(const vector<DataType> &_data)
+    void write_data(const sc_vector<sc_signal<DataType>> &_data)
     {
         assert(_data.size() == channel_data.size());
-        for(unsigned int i = 0; i<_data.size(); i++)
+        for(unsigned int i = 0; i<channel_width; i++)
         {
             channel_data[i] = _data[i];
         }
@@ -228,11 +223,24 @@ struct MemoryChannelCreator
 };
 
 template <typename DataType>
+struct MemoryRowCreator
+{
+    MemoryRowCreator(unsigned int _width, sc_trace_file *_tf) : tf(_tf), width(_width) {}
+
+    sc_vector<sc_signal<DataType>> *operator()(const char *name, size_t)
+    {
+        return new sc_vector<sc_signal<DataType>>(name, width);
+    }
+    sc_trace_file *tf;
+    unsigned int width;
+};
+
+template <typename DataType>
 struct Memory : public sc_module
 {
     // Control Signals
     unsigned int length, width;
-    vector<vector<DataType>> ram;
+    sc_vector<sc_vector<sc_signal<DataType>>> ram;
     sc_port<GlobalControlChannel_IF> control;
     sc_vector<sc_port<MemoryChannel_IF<DataType>>> channels;
 
@@ -258,7 +266,10 @@ struct Memory : public sc_module
                     {
                     case MemoryChannelMode::WRITE:
                         assert(channel->read_data().size() == width);
-                        ram[channel->addr()] = channel->read_data();
+                        for(unsigned int i = 0; i<width; i++)
+                        {
+                            ram[channel->addr()][i] = channel->read_data()[i];
+                        }
                         break;
 
                     case MemoryChannelMode::READ:
@@ -271,6 +282,19 @@ struct Memory : public sc_module
         }
     }
 
+    void print_memory_contents()
+    {
+        for (const auto& row : ram)
+        {
+            for(const auto& col : row)
+            {
+                cout << col << " ";
+            }
+            cout << endl;
+        }
+
+    }
+
     // Constructor
     Memory(
         sc_module_name name,
@@ -279,21 +303,12 @@ struct Memory : public sc_module
         unsigned int _length,
         unsigned int _width,
         sc_trace_file *tf) : sc_module(name),
+                             ram("ram", _length, MemoryRowCreator<DataType>(_width,tf)),
                              control("control"),
                              channels("channel", _channel_count)
     {
         length = _length;
         width = _width;
-
-        for (unsigned int i = 0; i < _length; i++)
-        {
-            vector<DataType> row;
-            for (unsigned j = 0; j < _width; j++)
-            {
-                row.push_back(0);
-            }
-            ram.push_back(row);
-        }
 
         control(_control);
 

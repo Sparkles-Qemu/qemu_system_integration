@@ -5,16 +5,18 @@ using std::cout;
 using std::endl;
 
 unsigned int ram_length = 256;
-unsigned int ram_width = 128;
+unsigned int ram_width = 4;
 unsigned int read_channel_count = 1;
 unsigned int write_channel_count = 1;
 unsigned int channel_count = read_channel_count + write_channel_count;
 
 sc_trace_file *tf = sc_create_vcd_trace_file("Prog_trace");
 
+GlobalControlChannel control("global_control_channel", sc_time(1, SC_NS), tf);
+
 MemoryChannel<float> rchannel("read_channel", ram_width, tf);
 MemoryChannel<float> wchannel("write_channel", ram_width, tf);
-GlobalControlChannel control("global_control_channel", sc_time(1, SC_NS), tf);
+sc_vector<sc_signal<float>> payload("payload", ram_width);
 
 Memory<float> mem("sram",
 				  control,
@@ -36,7 +38,7 @@ bool validate_reset()
 	{
 		for(auto& col : row)
 		{
-			if (col != 0)
+			if (col != float(0))
 			{
 				return false;
 			}
@@ -55,28 +57,43 @@ bool validate_write()
 	unsigned int val = 1;
 	for (unsigned int i = 0; i < ram_length; i++)
 	{
-		vector<float> payload;
+		cout << "Generating Payload " << endl;
 		for(unsigned int j = 0; j < ram_width; j++)
 		{
-			payload.push_back(val++);
+			payload[j] = val++;
 		}
+		sc_start(1, SC_NS);
+
+		cout << "Writing Payload to wchannel: " << endl;
+		for(auto& data : payload)
+		{
+			cout << data << " ";
+		}
+		cout << endl;
+
 		wchannel.write_data(payload);
 		wchannel.set_addr(i);
 
+		cout << "Writing wchannel data to memory: " << endl;
 		sc_start(1, SC_NS);
 	}
+
+	cout << "validating ... ";
 	unsigned int expected_data = 1;
 	for (const auto& row : mem.ram)
 	{
 		for(const auto& col : row)
 		{
-			if (col != expected_data++)
+			if (col != float(expected_data++))
 			{
 				return false;
 			}
 		}
 	}
+	cout << " success!" << endl;
 	val = 1;
+
+	cout << " writing to specific data elements ... " << endl;
 	for (unsigned int i = 0; i < ram_length; i++)
 	{
 		wchannel.write_data_element(val, 0);
@@ -88,10 +105,12 @@ bool validate_write()
 		sc_start(1, SC_NS);
 		val+=4;
 	}
+
+	cout << "validating ... ";
 	expected_data = 1;
 	for (const auto& row : mem.ram)
 	{
-		if (row[0] != expected_data)
+		if (row[0] != float(expected_data))
 		{
 			return false;
 		}
@@ -123,11 +142,12 @@ bool validate_read()
 	unsigned int val = 1;
 	for (unsigned int i = 0; i < ram_length; i++)
 	{
-		vector<float> payload;
 		for(unsigned int j = 0; j < ram_width; j++)
 		{
-			payload.push_back(val++);
+			payload[j] = val++;
 		}
+		sc_start(1, SC_NS);
+
 		wchannel.write_data(payload);
 		wchannel.set_addr(i);
 
@@ -141,10 +161,10 @@ bool validate_read()
 		rchannel.set_addr(i);
 		sc_start(1, SC_NS);
 
-		const vector<float>& payload = rchannel.read_data();
+		const sc_vector<sc_signal<float>>& payload = rchannel.read_data();
 		for(unsigned int j = 0; j<ram_width; j++)
 		{
-			if(payload[j] != expected_data++)
+			if(payload[j] != float(expected_data++))
 			{
 				return false;
 			}
