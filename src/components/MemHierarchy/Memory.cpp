@@ -425,7 +425,6 @@ struct AddressGenerator : public sc_module
         resetAllInternalCounters();
     }
 
-    // Called on rising edge of clk or high level reset
     void update()
     {
         if (reset.read())

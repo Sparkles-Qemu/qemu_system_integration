@@ -8,7 +8,7 @@ LIBXX=-I$(SYSC_PATH)/include -L$(SYSC_PATH)/lib-linux64 -lsystemc -Wl,-rpath,$(S
 
 #Edit all these vars to match your sources and targets
 TARGET= tb
-OBJS= tb_MemoryHierarchy.o
+OBJS= tb_Memory.o
 
 CXXCOMPILE=$(CXX) $(INCLUDES) $(CXXFLAGS) $(LIBXX)
 
@@ -24,4 +24,4 @@ RUN_TB: $(TARGET)
 	./sim
 
 clean: 
-	rm -rf $(TARGET) $(OBJS)
+	rm -rf $(TARGET) $(OBJS) *.o *.vcd
