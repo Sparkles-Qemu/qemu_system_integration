@@ -19,6 +19,7 @@ using std::fill;
 using std::string;
 using std::vector;
 
+
 template <typename Type>
 struct GenericCreator
 {
@@ -44,7 +45,7 @@ struct GenericControlBus : public sc_module
     }
 };
 
-enum class MemoryChannelMode
+enum MemoryChannelMode
 {
     READ,
     WRITE
@@ -106,9 +107,9 @@ template <typename DataType>
 struct MemoryChannel_IF : virtual public sc_interface
 {
 public:
-    virtual MemoryChannelMode mode() = 0;
+    virtual const MemoryChannelMode& mode() = 0;
     virtual void set_mode(MemoryChannelMode mode) = 0;
-    virtual const vector<DataType> &read_data() = 0;
+    virtual vector<DataType> read_data() = 0;
     virtual void write_data(const vector<DataType> &_data) = 0;
     virtual void write_data_element(DataType _data, unsigned int col) = 0;
     virtual unsigned int addr() = 0;
@@ -121,13 +122,17 @@ public:
 template <typename DataType>
 struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 {
-    vector<DataType> channel_data;
-    unsigned int channel_addr;
-    bool channel_enabled;
-    MemoryChannelMode channel_mode;
+    sc_vector<sc_signal<DataType>> channel_data;
+    sc_signal<unsigned int> channel_addr;
+    sc_signal<bool> channel_enabled;
+    sc_signal<MemoryChannelMode> channel_mode;
     unsigned int channel_width;
 
-    MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file *tf) : sc_module(name), channel_data(width, 0)
+    MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file *tf) : sc_module(name), \
+    channel_data("data", width), \
+    channel_addr("addr"), \
+    channel_enabled("enabled"), \
+    channel_mode("mode")
     {
         channel_addr = 0;
         channel_enabled = false;
@@ -136,15 +141,23 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         // // sc_trace(tf, this->data, (string(this->data.name())));
     }
 
-    const vector<DataType> &read_data()
+    vector<DataType> read_data()
     {
-        return channel_data;
+        vector<DataType> returnable;
+        for(const auto& data : channel_data)
+        {
+            returnable.push_back(data);
+        }
+        return returnable;
     }
 
     void write_data(const vector<DataType> &_data)
     {
         assert(_data.size() == channel_data.size());
-        channel_data = _data;
+        for(unsigned int i = 0; i<_data.size(); i++)
+        {
+            channel_data[i] = _data[i];
+        }
     }
 
     void write_data_element(DataType _data, unsigned int col)
@@ -177,9 +190,9 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         channel_mode = mode;
     }
 
-    MemoryChannelMode mode()
+    const MemoryChannelMode& mode()
     {
-        return channel_mode;
+        return channel_mode.read();
     }
 
     void reset()
