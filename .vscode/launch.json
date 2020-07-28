@@ -15,6 +15,9 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "sourceFileMap": {
+                "/Users/Grad/asultan/Documents/hwsw/project/src/systemc-2.3/src/sysc/datatypes/int/sc_int_base.cpp": "/home/sultan/Documents/research/qemu_system_integration/src/systemc/src/sysc/datatypes/int/sc_int_base.cpp"
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

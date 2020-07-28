@@ -8,7 +8,11 @@
 #include <iostream>
 #include <assert.h>
 #include <Connector.cpp>
+#include <algorithm> // for copy() and assign()
+#include <iterator>  // for back_inserter
 
+using std::back_inserter;
+using std::copy;
 using std::cout;
 using std::endl;
 using std::fill;
@@ -43,8 +47,59 @@ struct GenericControlBus : public sc_module
 enum class MemoryChannelMode
 {
     READ,
-    WRITE,
-    HIGH_IMPEDANCE
+    WRITE
+};
+
+struct GlobalControlChannel_IF : virtual public sc_interface
+{
+public:
+    virtual sc_clock &clk() = 0;
+    virtual const sc_signal<bool> &reset() = 0;
+    virtual const sc_signal<bool> &enable() = 0;
+    virtual void set_reset(bool val) = 0;
+    virtual void set_enable(bool val) = 0;};
+
+struct GlobalControlChannel : public sc_module, public GlobalControlChannel_IF
+{
+    sc_clock global_clock;
+    sc_signal<bool> global_reset;
+    sc_signal<bool> global_enable;
+    GlobalControlChannel(sc_module_name name,
+                         sc_time time_val,
+                         sc_trace_file *tf) : sc_module(name),
+                                                       global_clock("clock", time_val),
+                                                       global_reset("reset"),
+                                                       global_enable("enable")
+    {
+        sc_trace(tf, this->global_clock, (this->global_clock.name()));
+        sc_trace(tf, this->global_reset, (this->global_reset.name()));
+        sc_trace(tf, this->global_enable, (this->global_enable.name()));
+    }
+
+    sc_clock &clk()
+    {
+        return global_clock;
+    }
+    
+    sc_signal<bool> &reset()
+    {
+        return global_reset;
+    }
+
+    sc_signal<bool> &enable()
+    {
+        return global_enable;
+    }
+
+    void set_reset(bool val)
+    {
+        global_reset = val;
+    }
+
+    void set_enable(bool val)
+    {
+        global_enable = val;
+    }
 };
 
 template <typename DataType>
@@ -52,90 +107,152 @@ struct MemoryChannel_IF : virtual public sc_interface
 {
 public:
     virtual MemoryChannelMode mode() = 0;
-    virtual const sc_vector<DataType>& read_data() = 0;
-    virtual void write_data(const sc_vector<DataType>& _data) = 0;
-    virtual unsigned int addr() = 0; // write a character
+    virtual void set_mode(MemoryChannelMode mode) = 0;
+    virtual const vector<DataType> &read_data() = 0;
+    virtual void write_data(const vector<DataType> &_data) = 0;
+    virtual void write_data_element(DataType _data, unsigned int col) = 0;
+    virtual unsigned int addr() = 0;
+    virtual void set_addr(unsigned int addr) = 0;
     virtual bool enabled() = 0;
-    virtual void reset() = 0; // empty the stack
+    virtual void set_enable(bool status) = 0;
+    virtual void reset() = 0;
 };
 
 template <typename DataType>
 struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 {
-    sc_vector<DataType> data;
-    unsigned int addr;
-    bool enabled;
-    MemoryChannelMode mode;
+    vector<DataType> channel_data;
+    unsigned int channel_addr;
+    bool channel_enabled;
+    MemoryChannelMode channel_mode;
+    unsigned int channel_width;
 
-    MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file* tf) : sc_module(name)
+    MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file *tf) : sc_module(name), channel_data(width, 0)
     {
-        data.init("data", width);
-        addr = 0;
-        enabled = false;
-        mode = MemoryChannelMode::HIGH_IMPEDANCE;
-    
+        channel_addr = 0;
+        channel_enabled = false;
+        channel_mode = MemoryChannelMode::READ;
+        channel_width = width;
+        // // sc_trace(tf, this->data, (string(this->data.name())));
     }
 
-    const sc_vector<DataType>& read_data()
+    const vector<DataType> &read_data()
     {
-        return data;
+        return channel_data;
     }
-    
-    void write_data(const sc_vector<DataType>& _data)
+
+    void write_data(const vector<DataType> &_data)
     {
-        assert(_data.size() == data.size());
-        for(int i = 0; i<data.size(); i++)
-        {
-            data[i] = _data[i];
-        }
+        assert(_data.size() == channel_data.size());
+        channel_data = _data;
+    }
+
+    void write_data_element(DataType _data, unsigned int col)
+    {
+        assert(col <= channel_data.size() && col >= 0);
+        channel_data[col] = _data;
     }
 
     unsigned int addr()
     {
-        return addr;
+        return channel_addr;
     }
 
+    void set_addr(unsigned int addr)
+    {
+        channel_addr = addr;
+    }
+
+    void set_enable(bool status)
+    {
+        channel_enabled = status;
+    }
     bool enabled()
     {
-        return enabled;
+        return channel_enabled;
+    }
+
+    void set_mode(MemoryChannelMode mode)
+    {
+        channel_mode = mode;
     }
 
     MemoryChannelMode mode()
     {
-        return mode;
+        return channel_mode;
     }
+
+    void reset()
+    {
+        for (auto &data : channel_data)
+        {
+            data = 0;
+        }
+        channel_addr = 0;
+        channel_enabled = false;
+        channel_mode = MemoryChannelMode::READ;
+    }
+
+    void register_port(sc_port_base &port_,
+                       const char *if_typename_)
+    {
+        cout << "binding    " << port_.name() << " to "
+             << "interface: " << if_typename_ << " with channel width " << channel_width << endl;
+    }
+};
+
+template <typename DataType>
+struct MemoryChannelCreator
+{
+    MemoryChannelCreator(unsigned int _width, sc_trace_file *_tf) : tf(_tf), width(_width) {}
+
+    MemoryChannel<DataType> *operator()(const char *name, size_t)
+    {
+        return new MemoryChannel<DataType>(name, width, tf);
+    }
+    sc_trace_file *tf;
+    unsigned int width;
 };
 
 template <typename DataType>
 struct Memory : public sc_module
 {
     // Control Signals
-    sc_in_clk clk;
-    sc_in<bool> reset, mem_enable;
-    sc_vector<sc_vector<DataType>> ram;
+    unsigned int length, width;
+    vector<vector<DataType>> ram;
+    sc_port<GlobalControlChannel_IF> control;
     sc_vector<sc_port<MemoryChannel_IF<DataType>>> channels;
 
     void update()
     {
-        if (reset.read())
+        if (control->reset())
         {
-            fill(ram.begin(), ram.end(), 0);
-        }
-        else if (mem_enable.read())
-        {
-            for (auto &&port : read_ports)
+            for (auto &row : ram)
             {
-                if (port.enabled.read())
+                for (auto &col : row)
                 {
-                    port.data.write(ram.at(port.addr.read()));
+                    col = 0;
                 }
             }
-
-            for (auto &&port : write_ports)
+        }
+        else if (control->enable())
+        {
+            for (auto &channel : channels)
             {
-                if (port.enabled.read())
+                if (channel->enabled())
                 {
-                    ram.at(port.addr.read()) = port.data.read();
+                    switch (channel->mode())
+                    {
+                    case MemoryChannelMode::WRITE:
+                        assert(channel->read_data().size() == width);
+                        ram[channel->addr()] = channel->read_data();
+                        break;
+
+                    case MemoryChannelMode::READ:
+                        assert(ram[channel->addr()].size() == width);
+                        channel->write_data(ram[channel->addr()]);
+                        break;
+                    }
                 }
             }
         }
@@ -144,46 +261,32 @@ struct Memory : public sc_module
     // Constructor
     Memory(
         sc_module_name name,
-        const GenericControlBus &_control,
-        unsigned int _read_port_count,
-        unsigned int _write_port_count,
+        GlobalControlChannel& _control,
+        unsigned int _channel_count,
+        unsigned int _length,
+        unsigned int _width,
         sc_trace_file *tf) : sc_module(name),
-                             ram("ram", length),
-                             read_ports("read_port"),
-                             write_ports("write_port"),
-                             read_bus_bundle("read_bus"),
-                             write_bus_bundle("write_bus")
+                             control("control"),
+                             channels("channel", _channel_count)
     {
-        this->clk(_control.clk);
-        this->reset(_control.reset);
-        this->mem_enable(_control.enable);
+        length = _length;
+        width = _width;
 
-        read_ports.init(_read_port_count, GenericCreator<Port<sc_out<DataType>>>(tf));
-        write_ports.init(_write_port_count, GenericCreator<Port<sc_in<DataType>>>(tf));
-        read_bus_bundle.init(_read_port_count, GenericCreator<MemoryBus<DataType>>(tf));
-        write_bus_bundle.init(_write_port_count, GenericCreator<MemoryBus<DataType>>(tf));
-
-        for (unsigned int i = 0; i < _read_port_count; i++)
+        for (unsigned int i = 0; i < _length; i++)
         {
-            read_ports.at(i).data(read_bus_bundle.at(i).data);
-            read_ports.at(i).addr(read_bus_bundle.at(i).addr);
-            read_ports.at(i).enabled(read_bus_bundle.at(i).enable);
+            vector<DataType> row;
+            for (unsigned j = 0; j < _width; j++)
+            {
+                row.push_back(0);
+            }
+            ram.push_back(row);
         }
 
-        for (unsigned int i = 0; i < _write_port_count; i++)
-        {
-            write_ports.at(i).data(write_bus_bundle.at(i).data);
-            write_ports.at(i).addr(write_bus_bundle.at(i).addr);
-            write_ports.at(i).enabled(write_bus_bundle.at(i).enable);
-        }
+        control(_control);
 
         SC_METHOD(update);
-        sensitive << clk.pos();
-        sensitive << reset;
-
-        sc_trace(tf, this->clk, (string(this->name()) + string("_clk")));
-        sc_trace(tf, this->reset, (string(this->name()) + string("_reset")));
-        sc_trace(tf, this->mem_enable, (string(this->name()) + string("_mem_enable")));
+        sensitive << control->clk();
+        sensitive << control->reset();
 
         cout << "MEMORY MODULE: " << name << " has been instantiated " << endl;
     }
