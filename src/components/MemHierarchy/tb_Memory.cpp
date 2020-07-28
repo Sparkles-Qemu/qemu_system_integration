@@ -254,6 +254,11 @@ struct Memory_TB : public sc_module
 		return 0;
 
 	}
+
+	~Memory_TB()
+	{
+		sc_close_vcd_trace_file(tf);
+	}
 };
 
 int sc_main(int argc, char *argv[])

@@ -23,5 +23,8 @@ $(TARGET):  $(OBJS)
 RUN_TB: $(TARGET)
 	./sim
 
+clean_all: clean
+	rm -rf  *.o *.vcd
+
 clean: 
-	rm -rf $(TARGET) $(OBJS) *.o *.vcd
+	rm -rf $(TARGET) $(OBJS)
