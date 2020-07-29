@@ -40,18 +40,18 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
     sc_signal<unsigned int> channel_addr;
     sc_signal<bool> channel_enabled;
     sc_signal<MemoryChannelMode> channel_mode;
-    unsigned int channel_width;
+    const unsigned int channel_width;
 
     MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file *tf) : sc_module(name), \
     channel_data("data", width), \
     channel_addr("addr"), \
     channel_enabled("enabled"), \
-    channel_mode("mode")
+    channel_mode("mode"),
+    channel_width(width)
     {
         channel_addr = 0;
         channel_enabled = false;
         channel_mode = MemoryChannelMode::READ;
-        channel_width = width;
 
         for(unsigned int i = 0; i<channel_width; i++)
         {
