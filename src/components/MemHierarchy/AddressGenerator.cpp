@@ -8,6 +8,7 @@
 #include <iostream>
 #include <assert.h>
 #include <GlobalControl.cpp>
+#include <Memory.cpp>
 
 using std::cout;
 using std::endl;
@@ -64,10 +65,7 @@ struct AddressGenerator : public sc_module
     // Control Signals
     // sc_in<bool> clk, reset, enable;
     sc_port<GlobalControlChannel_IF> control;
-
-    sc_in<DataType> data;
-    sc_out<unsigned int> addr;
-    sc_out<bool> port_enable;
+    sc_port<MemoryChannel_IF<DataType>> channel;
 
     // Internal Data
     vector<Descriptor_2D> descriptors;

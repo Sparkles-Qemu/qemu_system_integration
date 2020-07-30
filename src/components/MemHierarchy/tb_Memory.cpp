@@ -151,7 +151,6 @@ struct Memory_TB : public sc_module
 
 	bool validate_read()
 	{
-
 		control.set_reset(true);
 		sc_start(1, SC_NS);
 		control.set_reset(false);
