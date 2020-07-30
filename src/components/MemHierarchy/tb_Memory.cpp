@@ -96,7 +96,7 @@ struct Memory_TB : public sc_module
 			cout << endl;
 			#endif
 
-			wchannel.write_data(payload);
+			wchannel.channel_write_data(payload);
 			wchannel.set_addr(i);
 
 			#ifdef DEBUG
@@ -124,10 +124,10 @@ struct Memory_TB : public sc_module
 		cout << "writing to specific data elements ... " << endl;
 		for (unsigned int i = 0; i < ram_length; i++)
 		{
-			wchannel.write_data_element(val, 0);
-			wchannel.write_data_element(0, 1);
-			wchannel.write_data_element(0, 2);
-			wchannel.write_data_element(0, 3);
+			wchannel.channel_write_data_element(val, 0);
+			wchannel.channel_write_data_element(0, 1);
+			wchannel.channel_write_data_element(0, 2);
+			wchannel.channel_write_data_element(0, 3);
 			wchannel.set_addr(i);
 
 			sc_start(1, SC_NS);
@@ -180,7 +180,7 @@ struct Memory_TB : public sc_module
 			}
 			sc_start(1, SC_NS);
 
-			wchannel.write_data(payload);
+			wchannel.channel_write_data(payload);
 			wchannel.set_addr(i);
 
 			sc_start(1, SC_NS);
@@ -194,7 +194,7 @@ struct Memory_TB : public sc_module
 			rchannel.set_addr(i);
 			sc_start(1, SC_NS);
 
-			const sc_vector<sc_signal<DataType>> &payload = rchannel.read_data();
+			const sc_vector<sc_signal<DataType>> &payload = rchannel.channel_read_data();
 			for (unsigned int j = 0; j < ram_width; j++)
 			{
 				if (payload[j] != DataType(expected_data++))

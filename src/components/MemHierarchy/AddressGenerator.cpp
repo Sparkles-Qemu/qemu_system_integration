@@ -62,7 +62,8 @@ template <typename DataType>
 struct AddressGenerator : public sc_module
 {
     // Control Signals
-    sc_in<bool> clk, reset, enable;
+    // sc_in<bool> clk, reset, enable;
+    sc_port<GlobalControlChannel_IF> control;
 
     sc_in<DataType> data;
     sc_out<unsigned int> addr;
@@ -191,16 +192,15 @@ struct AddressGenerator : public sc_module
     }
 
     // Constructor
-    AddressGenerator(sc_module_name name, const GenericControlBus &_control) : sc_module(name)
+    AddressGenerator(sc_module_name name, const GlobalControlChannel &_control) : sc_module(name), control("control")
     {
+        control(_control);
+
         SC_METHOD(update);
-        sensitive << reset;
-        sensitive << clk.pos();
+        sensitive << control->clk();
+        sensitive << control->reset();
 
         // connect signals
-        this->clk(_control.clk);
-        this->reset(_control.reset);
-        this->enable(_control.enable);
         std::cout << "ADDRESS_GENERATOR MODULE: " << name << " has been instantiated " << std::endl;
     }
 

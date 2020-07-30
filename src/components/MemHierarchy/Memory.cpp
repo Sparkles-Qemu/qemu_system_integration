@@ -23,27 +23,32 @@ struct MemoryChannel_IF : virtual public sc_interface
 public:
     virtual const MemoryChannelMode& mode() = 0;
     virtual void set_mode(MemoryChannelMode mode) = 0;
-    virtual const sc_vector<sc_signal<DataType>>& read_data() = 0;
-    virtual void write_data(const sc_vector<sc_signal<DataType>> & _data) = 0;
-    virtual void write_data_element(DataType _data, unsigned int col) = 0;
+    virtual const sc_vector<sc_signal<DataType>>& mem_read_data() = 0;
+    virtual void mem_write_data(const sc_vector<sc_signal<DataType>> & _data) = 0;
+    virtual const sc_vector<sc_signal<DataType>>& channel_read_data() = 0;
+    virtual void channel_write_data(const sc_vector<sc_signal<DataType>> & _data) = 0;
+    virtual void channel_write_data_element(DataType _data, unsigned int col) = 0;
     virtual unsigned int addr() = 0;
     virtual void set_addr(unsigned int addr) = 0;
     virtual bool enabled() = 0;
     virtual void set_enable(bool status) = 0;
     virtual void reset() = 0;
+    virtual const unsigned int& get_width() = 0;
 };
 
 template <typename DataType>
 struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 {
-    sc_vector<sc_signal<DataType>> channel_data;
+    sc_vector<sc_signal<DataType>> read_channel_data;
+    sc_vector<sc_signal<DataType>> write_channel_data;
     sc_signal<unsigned int> channel_addr;
     sc_signal<bool> channel_enabled;
     sc_signal<MemoryChannelMode> channel_mode;
     const unsigned int channel_width;
 
     MemoryChannel(sc_module_name name, unsigned int width, sc_trace_file *tf) : sc_module(name), \
-    channel_data("data", width), \
+    read_channel_data("read_channel_data", width), \
+    write_channel_data("write_channel_data", width), \
     channel_addr("addr"), \
     channel_enabled("enabled"), \
     channel_mode("mode"),
@@ -55,7 +60,8 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 
         for(unsigned int i = 0; i<channel_width; i++)
         {
-            sc_trace(tf, this->channel_data[i], (string(this->channel_data[i].name())));
+            sc_trace(tf, this->read_channel_data[i], (string(this->read_channel_data[i].name())));
+            sc_trace(tf, this->write_channel_data[i], (string(this->write_channel_data[i].name())));
         }
 
         sc_trace(tf, this->channel_addr, (string(this->channel_addr.name())));
@@ -63,24 +69,38 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         sc_trace(tf, this->channel_mode, (string(this->channel_mode.name())));
     }
 
-    const sc_vector<sc_signal<DataType>>& read_data()
+    const sc_vector<sc_signal<DataType>>& mem_read_data()
     {
-        return channel_data;
+        return write_channel_data;
     }
 
-    void write_data(const sc_vector<sc_signal<DataType>> &_data)
+    void mem_write_data(const sc_vector<sc_signal<DataType>> &_data)
     {
-        assert(_data.size() == channel_data.size());
-        for(unsigned int i = 0; i<channel_width; i++)
+        assert(_data.size() == channel_width);
+        for(unsigned int i = 0; i< channel_width; i++)
         {
-            channel_data[i] = _data[i];
+            read_channel_data[i] = _data[i];
         }
     }
 
-    void write_data_element(DataType _data, unsigned int col)
+    const sc_vector<sc_signal<DataType>>& channel_read_data()
     {
-        assert(col <= channel_data.size() && col >= 0);
-        channel_data[col] = _data;
+        return read_channel_data;
+    }
+
+    void channel_write_data(const sc_vector<sc_signal<DataType>> &_data)
+    {
+        assert(_data.size() == channel_width);
+        for(unsigned int i = 0; i< channel_width; i++)
+        {
+            write_channel_data[i] = _data[i];
+        }
+    }
+
+    void channel_write_data_element(DataType _data, unsigned int col)
+    {
+        assert(col <= channel_width && col >= 0);
+        write_channel_data[col] = _data;
     }
 
     unsigned int addr()
@@ -114,13 +134,22 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 
     void reset()
     {
-        for (auto &data : channel_data)
+        for (auto &data : read_channel_data)
+        {
+            data = 0;
+        }
+        for (auto &data : write_channel_data)
         {
             data = 0;
         }
         channel_addr = 0; 
         channel_enabled = false;
         channel_mode = MemoryChannelMode::READ;
+    }
+
+    const unsigned int& get_width()
+    {
+        return channel_width;
     }
 
     void register_port(sc_port_base &port_,
@@ -187,16 +216,16 @@ struct Memory : public sc_module
                     switch (channel->mode())
                     {
                     case MemoryChannelMode::WRITE:
-                        assert(channel->read_data().size() == width);
+                        assert(channel->get_width() == width);
                         for(unsigned int i = 0; i<width; i++)
                         {
-                            ram[channel->addr()][i] = channel->read_data()[i];
+                            ram[channel->addr()][i] = channel->mem_read_data()[i];
                         }
                         break;
 
                     case MemoryChannelMode::READ:
-                        assert(ram[channel->addr()].size() == width);
-                        channel->write_data(ram[channel->addr()]);
+                        assert(channel->get_width() == width);
+                        channel->mem_write_data(ram[channel->addr()]);
                         break;
                     }
                 }
