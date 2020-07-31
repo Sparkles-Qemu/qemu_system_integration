@@ -53,17 +53,17 @@ struct Descriptor_2D
     unsigned int start;    // start index in ram array
     DescriptorState state; // state of dma
     unsigned int x_count;  // number of floats to transfer/wait
-    unsigned int x_modify; // number of floats between each transfer/wait
+    int x_modify; // number of floats between each transfer/wait
     unsigned int y_count;  // number of floats to transfer/wait
-    unsigned int y_modify; // number of floats between each transfer/wait
+    int y_modify; // number of floats between each transfer/wait
 
     Descriptor_2D(unsigned int _next,
                   unsigned int _start,
                   DescriptorState _state,
                   unsigned int _x_count,
-                  unsigned int _x_modify,
+                  int _x_modify,
                   unsigned int _y_count,
-                  unsigned int _y_modify)
+                  int _y_modify)
     {
         this->next = _next;
         this->start = _start;
@@ -92,6 +92,10 @@ template <typename DataType>
 struct AddressGenerator : public sc_module
 {
     // Control Signals
+private:
+    sc_in_clk _clk;
+
+public:
     // sc_in<bool> clk, reset, enable;
     sc_port<GlobalControlChannel_IF> control;
     sc_port<MemoryChannel_IF<DataType>> channel;
@@ -104,10 +108,7 @@ struct AddressGenerator : public sc_module
     sc_signal<unsigned int> x_count_remaining;
     sc_signal<unsigned int> y_count_remaining;
 
-    const
-
-        void
-        resetIndexingCounters()
+    void resetIndexingCounters()
     {
         x_count_remaining = descriptors[execute_index].x_count;
         y_count_remaining = descriptors[execute_index].y_count;
@@ -120,7 +121,7 @@ struct AddressGenerator : public sc_module
         y_count_remaining = descriptors[execute_index].y_count;
     }
 
-    void loadProgram(vector<Descriptor_2D> newProgram)
+    void loadProgram(const vector<Descriptor_2D> &newProgram)
     {
         descriptors.clear();
         copy(newProgram.begin(), newProgram.end(), std::back_inserter(descriptors));
@@ -221,12 +222,20 @@ struct AddressGenerator : public sc_module
     }
 
     // Constructor
-    AddressGenerator(sc_module_name name, GlobalControlChannel &_control, sc_trace_file *_tf) : sc_module(name), control("control"), channel("channel"), tf(_tf)
+    AddressGenerator(sc_module_name name, GlobalControlChannel &_control, sc_trace_file *_tf) : sc_module(name),
+                                                                                                control("control"),
+                                                                                                channel("channel"),
+                                                                                                tf(_tf),
+                                                                                                execute_index("execute_index"),
+                                                                                                current_ram_index("current_ram_index"),
+                                                                                                x_count_remaining("x_count_remaining"),
+                                                                                                y_count_remaining("y_count_remaining")
     {
         control(_control);
+        _clk(control->clk());
 
         SC_METHOD(update);
-        sensitive << control->clk();
+        sensitive << _clk.pos();
         sensitive << control->reset();
 
         // connect signals

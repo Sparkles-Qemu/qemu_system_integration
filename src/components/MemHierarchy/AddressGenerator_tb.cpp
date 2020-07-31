@@ -23,10 +23,14 @@ struct AddressGenerator_TB : public sc_module
 	{
 		tf->set_time_unit(1, SC_PS);
 		dut.channel(mem_channel);
+		control.set_reset(false);
 		cout << "Instantiated AddressGenerator TB with name " << this->name() << endl;
 	}
 	bool validate_reset()
 	{
+		cout << "Validating Reset" << endl;
+		control.set_reset(false);
+		sc_start(1, SC_NS);
 		control.set_reset(true);
 		sc_start(1, SC_NS);
 		if (!(dut.descriptors.at(0) == default_descriptor))
@@ -34,44 +38,112 @@ struct AddressGenerator_TB : public sc_module
 			cout << "dut.descriptors.at(0) == default_descriptor FAILED!" << endl;
 			return false;
 		}
-		if (!(dut.execute_index.read() == 0))
+		if (!(dut.execute_index == 0))
 		{
-			cout << "dut.execute_index.read() == 0 FAILED!" << endl;
+			cout << "dut.execute_index == 0 FAILED!" << endl;
 			return false;
 		}
-		if (!(dut.current_ram_index.read() == 0))
+		if (!(dut.current_ram_index == 0))
 		{
-			cout << "dut.current_ram_index.read() == 0 FAILED!" << endl;
+			cout << "dut.current_ram_index == 0 FAILED!" << endl;
 			return false;
 		}
-		if (!(dut.x_count_remaining.read() == 0))
+		if (!(dut.x_count_remaining == 0))
 		{
-			cout << "dut.x_count_remaining.read() == 0 FAILED!" << endl;
+			cout << "dut.x_count_remaining == 0 FAILED!" << endl;
 			return false;
 		}
-		if (!(dut.y_count_remaining.read() == 0))
+		if (!(dut.y_count_remaining == 0))
 		{
-			cout << "dut.y_count_remaining.read() == 0 FAILED!" << endl;
+			cout << "dut.y_count_remaining == 0 FAILED!" << endl;
 			return false;
 		}
+		control.set_reset(false);
+		sc_start(1, SC_NS);
+		cout << "validate_reset Success" << endl;
 		return true;
 	}
 
-	bool validate_suspended()
+	bool validate_loadprogram_and_suspended_state()
 	{
+		cout << "Validating validate_loadprogram_and_suspended_state" << endl;
 
+		Descriptor_2D suspend_descriptor(0,0,DescriptorState::SUSPENDED, 0, 0, 0, 0);
+		vector<Descriptor_2D> temp_program;
+		temp_program.push_back(suspend_descriptor);
+		dut.loadProgram(temp_program);
+		control.set_enable(true);
+		sc_start(10, SC_NS);
+
+		if(!(dut.descriptors.at(0) == suspend_descriptor))
+		{
+			cout << "dut.descriptors.at(0) == suspend_descriptor FAILED!" << endl;
+			return false;
+		}
+		if(!(dut.currentDescriptor() == suspend_descriptor))
+		{
+			cout << "dut.currentDescriptor() == suspend_descriptor FAILED!" << endl;
+			return false;
+		}
+		if(!(dut.execute_index == 0))
+		{
+			cout << "dut.execute_index == 0 FAILED!" << endl;
+			return false;
+		}
+		if(!(dut.x_count_remaining == 0))
+		{
+			cout << "dut.x_count_remaining == 0 FAILED!" << endl;
+			return false;
+		}
+		if(!(dut.y_count_remaining == 0))
+		{
+			cout << "dut.y_count_remaining == 0 FAILED!" << endl;
+			return false;
+		}
+		cout << "validate_loadprogram_and_suspended_state Success" << endl;
 		return true;
 	}
+
+	bool validate_wait()
+	{
+		cout << "Validating validate_wait" << endl;
+		
+		control.set_reset(true);
+		sc_start(1, SC_NS);
+		control.set_reset(false);
+		sc_start(1, SC_NS);
+		Descriptor_2D wait_descriptor(1,0,DescriptorState::WAIT, 5, 1, 5, 1);
+		vector<Descriptor_2D> temp_program;
+		temp_program.push_back(suspend_descriptor);
+		dut.loadProgram(temp_program);
+		control.set_enable(true);
+		sc_start(10, SC_NS);
+
+		cout << "validate_wait SUCCESS" << endl;
+		return true;
+	}
+
 	int run_tb()
 	{
-		cout << "Validating Reset" << endl;
 		if (!validate_reset())
 		{
-			cout << "Reset Failed" << endl;
+			cout << "validate_reset() FAILED!" << endl;
 			return -1;
 		}
-		cout << "Reset Success" << endl;
-		cout << "TEST BENCH SUCCESS " << endl;
+
+		if(!(validate_loadprogram_and_suspended_state()))
+		{
+			cout << "validate_loadprogram_and_suspended_state() FAILED!" << endl;
+			return -1;
+		}
+
+		if(!(validate_wait()))
+		{
+			cout << "validate_wait() FAILED!" << endl;
+			return -1;
+		}
+
+		cout << "TEST BENCH SUCCESS " << endl << endl;
 		cout << "       aOOOOOOOOOOa" << endl;
 		cout << "     aOOOOOOOOOOOOOOa" << endl;
 		cout << "   aOO    OOOOOO    OOa" << endl;

@@ -189,7 +189,10 @@ struct MemoryRowCreator
 template <typename DataType>
 struct Memory : public sc_module
 {
+    private:
+    sc_in_clk _clk;
     // Control Signals
+    public:
     unsigned int length, width;
     sc_vector<sc_vector<sc_signal<DataType>>> ram;
     sc_port<GlobalControlChannel_IF> control;
@@ -270,9 +273,11 @@ struct Memory : public sc_module
         }
 
         control(_control);
+        _clk(control->clk());
 
         SC_METHOD(update);
-        sensitive << control->clk();
+
+        sensitive << _clk.pos();
         sensitive << control->reset();
 
         cout << "MEMORY MODULE: " << name << " has been instantiated " << endl;
