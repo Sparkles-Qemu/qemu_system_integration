@@ -12,8 +12,8 @@
 
 using std::cout;
 using std::endl;
-using std::vector;
 using std::string;
+using std::vector;
 
 template <typename Type>
 struct GenericCreator
@@ -26,7 +26,6 @@ struct GenericCreator
     }
     sc_trace_file *tf;
 };
-
 
 struct GenericControlBus : public sc_module
 {
@@ -57,7 +56,37 @@ struct Descriptor_2D
     unsigned int x_modify; // number of floats between each transfer/wait
     unsigned int y_count;  // number of floats to transfer/wait
     unsigned int y_modify; // number of floats between each transfer/wait
+
+    Descriptor_2D(unsigned int _next,
+                  unsigned int _start,
+                  DescriptorState _state,
+                  unsigned int _x_count,
+                  unsigned int _x_modify,
+                  unsigned int _y_count,
+                  unsigned int _y_modify)
+    {
+        this->next = _next;
+        this->start = _start;
+        this->state = _state;
+        this->x_count = _x_count;
+        this->x_modify = _x_modify;
+        this->y_count = _y_count;
+        this->y_modify = _y_modify;
+    }
+
+    bool operator==(const Descriptor_2D &rhs)
+    {
+        return this->next == rhs.next &&
+               this->start == rhs.start &&
+               this->state == rhs.state &&
+               this->x_count == rhs.x_count &&
+               this->x_modify == rhs.x_modify &&
+               this->y_count == rhs.y_count &&
+               this->y_modify == rhs.y_modify;
+    }
 };
+
+Descriptor_2D default_descriptor = {0, 0, DescriptorState::SUSPENDED, 0, 0, 0, 0};
 
 template <typename DataType>
 struct AddressGenerator : public sc_module
@@ -66,17 +95,19 @@ struct AddressGenerator : public sc_module
     // sc_in<bool> clk, reset, enable;
     sc_port<GlobalControlChannel_IF> control;
     sc_port<MemoryChannel_IF<DataType>> channel;
+    sc_trace_file *tf;
 
     // Internal Data
     vector<Descriptor_2D> descriptors;
-    unsigned int execute_index;
-    unsigned int current_ram_index;
-    unsigned int x_count_remaining;
-    unsigned int y_count_remaining;
+    sc_signal<unsigned int> execute_index;
+    sc_signal<unsigned int> current_ram_index;
+    sc_signal<unsigned int> x_count_remaining;
+    sc_signal<unsigned int> y_count_remaining;
 
-    const Descriptor_2D default_descriptor = {0, 0, DescriptorState::SUSPENDED, 0, 0, 0, 0};
+    const
 
-    void resetIndexingCounters()
+        void
+        resetIndexingCounters()
     {
         x_count_remaining = descriptors[execute_index].x_count;
         y_count_remaining = descriptors[execute_index].y_count;
@@ -111,14 +142,14 @@ struct AddressGenerator : public sc_module
 
     void updateCurrentIndex()
     {
-        x_count_remaining--;
+        x_count_remaining = x_count_remaining - 1;
         if (x_count_remaining == 0)
         {
             if (y_count_remaining != 0)
             {
-                current_ram_index += currentDescriptor().y_modify;
+                current_ram_index = current_ram_index + currentDescriptor().y_modify;
                 x_count_remaining = currentDescriptor().x_count;
-                y_count_remaining--;
+                y_count_remaining = y_count_remaining - 1;
             }
             else
             {
@@ -127,7 +158,7 @@ struct AddressGenerator : public sc_module
         }
         else
         {
-            current_ram_index += currentDescriptor().x_modify;
+            current_ram_index = current_ram_index + currentDescriptor().x_modify;
         }
     }
 
@@ -144,20 +175,20 @@ struct AddressGenerator : public sc_module
 
     void update()
     {
-        if (reset.read())
+        if (control->reset())
         {
             resetProgramMemory();
             resetAllInternalCounters();
             std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
         }
-        else if (enable.read())
+        else if (control->enable())
         {
             switch (currentDescriptor().state)
             {
             case DescriptorState::GENERATE:
             {
-                port_enable.write(true);
-                addr.write(current_ram_index);
+                channel->set_enable(true);
+                channel->set_addr(current_ram_index);
                 updateCurrentIndex();
                 if (descriptorComplete())
                 {
@@ -167,7 +198,7 @@ struct AddressGenerator : public sc_module
             }
             case DescriptorState::WAIT:
             {
-                port_enable.write(false);
+                channel->set_enable(false);
                 updateCurrentIndex();
                 if (descriptorComplete())
                 {
@@ -177,7 +208,7 @@ struct AddressGenerator : public sc_module
             }
             case DescriptorState::SUSPENDED:
             {
-                port_enable.write(false);
+                channel->set_enable(false);
                 break;
             }
             default:
@@ -190,7 +221,7 @@ struct AddressGenerator : public sc_module
     }
 
     // Constructor
-    AddressGenerator(sc_module_name name, const GlobalControlChannel &_control) : sc_module(name), control("control")
+    AddressGenerator(sc_module_name name, GlobalControlChannel &_control, sc_trace_file *_tf) : sc_module(name), control("control"), channel("channel"), tf(_tf)
     {
         control(_control);
 
