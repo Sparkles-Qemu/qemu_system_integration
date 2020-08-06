@@ -8,7 +8,7 @@ LIBXX=-I$(SYSC_PATH)/include -L$(SYSC_PATH)/lib-linux64 -lsystemc -Wl,-rpath,$(S
 
 #Edit all these vars to match your sources and targets
 TARGET= tb
-OBJS= AddressGenerator_tb.o
+OBJS= Memory_tb.o
 
 CXXCOMPILE=$(CXX) $(INCLUDES) $(CXXFLAGS) $(LIBXX)
 
