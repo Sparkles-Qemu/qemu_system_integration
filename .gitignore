@@ -1,7 +1,6 @@
 # ignore vcd trace files
 *.vcd
 .history/**
-**/systemc/**/*
-src/systemc/lib-linux64/libsystemc-2.3.0.so
+**/systemc-2.3.3/**/*
 **/tb
 **/*.o
