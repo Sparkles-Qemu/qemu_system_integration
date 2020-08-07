@@ -113,9 +113,13 @@ struct AddressGenerator_TB : public sc_module
 		sc_start(1, SC_NS);
 		control.set_reset(false);
 		sc_start(1, SC_NS);
-		Descriptor_2D wait_descriptor(1,0,DescriptorState::WAIT, 5, 1, 5, 1);
+		Descriptor_2D wait_descriptor_1(1,0,DescriptorState::WAIT, 2, 2, 0, 0);
+		Descriptor_2D wait_descriptor_2(2,0,DescriptorState::WAIT, 2, 2, 0, 0);
+		Descriptor_2D suspend_descriptor(0,0,DescriptorState::SUSPENDED, 0, 0, 0, 0);
 		vector<Descriptor_2D> temp_program;
-		temp_program.push_back(wait_descriptor);
+		temp_program.push_back(wait_descriptor_1);
+		temp_program.push_back(wait_descriptor_2);
+		temp_program.push_back(suspend_descriptor);
 		dut.loadProgram(temp_program);
 		control.set_enable(true);
 		sc_start(1, SC_NS);

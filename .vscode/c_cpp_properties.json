@@ -11,7 +11,7 @@
             "cppStandard": "c++11",
             "intelliSenseMode": "gcc-x64",
             "compilerArgs": [
-                "-I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm -Wl,-rpath,./systemc/lib-linux64"
+                "-I. -I./systemc/include -L. -Lsystemc/lib-linux64 -lsystemc -lm"
             ]
         }
     ],

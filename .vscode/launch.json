@@ -11,8 +11,13 @@
             "program": "${workspaceFolder}/${relativeFileDirname}/tb",
             "args": [],
             "stopAtEntry": false,
+            "environment": [
+                {
+                "name": "LD_LIBRARY_PATH",
+                "value": "/usr/local/systemc-2.3.3/lib-linux64"
+                }
+            ],
             "cwd": "${workspaceFolder}",
-            "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
             "sourceFileMap": {
