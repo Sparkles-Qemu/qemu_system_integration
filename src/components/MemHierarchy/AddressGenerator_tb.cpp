@@ -108,17 +108,33 @@ struct AddressGenerator_TB : public sc_module
 	{
 		cout << "Validating validate_wait" << endl;
 		
+		control.set_enable(false);
 		control.set_reset(true);
 		sc_start(1, SC_NS);
 		control.set_reset(false);
 		sc_start(1, SC_NS);
 		Descriptor_2D wait_descriptor(1,0,DescriptorState::WAIT, 5, 1, 5, 1);
 		vector<Descriptor_2D> temp_program;
-		temp_program.push_back(suspend_descriptor);
+		temp_program.push_back(wait_descriptor);
 		dut.loadProgram(temp_program);
 		control.set_enable(true);
-		sc_start(10, SC_NS);
-
+		sc_start(1, SC_NS);
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			sc_start(1, SC_NS);
+		}
+		
+		// sc_start(10, SC_NS);
+		if(!(dut.current_ram_index == 10))
+		{
+			cout << "dut.current_ram_index == 10 FAILED!" << endl;
+			return -1;
+		}
+		if(!(dut.channel->enabled() == false))
+		{
+			cout << "dut.channel->enabled() == false FAILED!" << endl;
+			return -1;
+		}
 		cout << "validate_wait SUCCESS" << endl;
 		return true;
 	}
