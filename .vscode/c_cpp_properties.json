@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/src/**",
-                "${workspaceFolder}/src/components/Util/**"
+                "${workspaceFolder}/src/components/Util/**",
+                "/usr/local/systemc-2.3.3/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",

@@ -115,18 +115,22 @@ struct AddressGenerator_TB : public sc_module
 		sc_start(1, SC_NS);
 		Descriptor_2D wait_descriptor_1(1,0,DescriptorState::WAIT, 2, 2, 0, 0);
 		Descriptor_2D wait_descriptor_2(2,0,DescriptorState::WAIT, 2, 2, 0, 0);
-		Descriptor_2D suspend_descriptor(0,0,DescriptorState::SUSPENDED, 0, 0, 0, 0);
+		Descriptor_2D suspend_descriptor(3,0,DescriptorState::SUSPENDED, 0, 0, 0, 0);
 		vector<Descriptor_2D> temp_program;
 		temp_program.push_back(wait_descriptor_1);
 		temp_program.push_back(wait_descriptor_2);
 		temp_program.push_back(suspend_descriptor);
 		dut.loadProgram(temp_program);
 		control.set_enable(true);
+		// load program and start first descriptor
 		sc_start(1, SC_NS);
-		for (unsigned int i = 0; i < 10; i++)
+		// run descriptors
+		for (unsigned int i = 0; i < 5; i++)
 		{
 			sc_start(1, SC_NS);
 		}
+		
+		sc_start(5, SC_NS);
 		
 		// sc_start(10, SC_NS);
 		if(!(dut.current_ram_index == 10))

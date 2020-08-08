@@ -126,6 +126,9 @@ public:
     {
         descriptors.clear();
         copy(newProgram.begin(), newProgram.end(), std::back_inserter(descriptors));
+        execute_index = 0;
+        //     resetAllInternalCounters();
+        //     first_cycle = false;
     }
 
     void resetProgramMemory()
@@ -171,6 +174,7 @@ public:
     {
         execute_index = descriptors[execute_index].next;
         resetAllInternalCounters();
+        first_cycle = true;
     }
 
     void update()
@@ -180,52 +184,54 @@ public:
             resetProgramMemory();
             resetAllInternalCounters();
             first_cycle = true;
-            std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
+            // std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
         }
         else if (control->enable())
         {
-            if (first_cycle)
+            // if (first_cycle)
+            // {
+            //     execute_index = 0;
+            //     resetAllInternalCounters();
+            //     first_cycle = false;
+            // }
+            switch (currentDescriptor().state)
             {
-                execute_index = 0;
-                resetAllInternalCounters();
-                first_cycle = false;
+            case DescriptorState::GENERATE:
+            {
+                channel->set_enable(true);
+                channel->set_addr(current_ram_index);
+                updateCurrentIndex();
+                if (descriptorComplete())
+                {
+                    loadNextDescriptor();
+                }
+                break;
             }
-            else
+            case DescriptorState::WAIT:
             {
-                switch (currentDescriptor().state)
+                if (first_cycle)
                 {
-                case DescriptorState::GENERATE:
+                    resetAllInternalCounters();
+                    first_cycle = false;
+                }
+                channel->set_enable(false);
+                updateCurrentIndex();
+                if (descriptorComplete())
                 {
-                    channel->set_enable(true);
-                    channel->set_addr(current_ram_index);
-                    updateCurrentIndex();
-                    if (descriptorComplete())
-                    {
-                        loadNextDescriptor();
-                    }
-                    break;
+                    loadNextDescriptor();
                 }
-                case DescriptorState::WAIT:
-                {
-                    channel->set_enable(false);
-                    updateCurrentIndex();
-                    if (descriptorComplete())
-                    {
-                        loadNextDescriptor();
-                    }
-                    break;
-                }
-                case DescriptorState::SUSPENDED:
-                {
-                    channel->set_enable(false);
-                    break;
-                }
-                default:
-                {
-                    std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Is in an invalid state! ... exitting" << std::endl;
-                    exit(-1);
-                }
-                }
+                break;
+            }
+            case DescriptorState::SUSPENDED:
+            {
+                channel->set_enable(false);
+                break;
+            }
+            default:
+            {
+                std::cout << "@ " << sc_time_stamp() << " " << this->name() << ": Is in an invalid state! ... exitting" << std::endl;
+                exit(-1);
+            }
             }
         }
     }

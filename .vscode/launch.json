@@ -31,7 +31,7 @@
                 },
                 {
                     "description": "systemc libs",
-                    "text": "set env LD_LIBRARY_PATH=${workspaceFolder}/src/systemc/lib-linux64",
+                    "text": "set env LD_LIBRARY_PATH=/usr/local/systemc-2.3.3/lib-linux64",
                     "ignoreFailures": true
                 }
             ]
