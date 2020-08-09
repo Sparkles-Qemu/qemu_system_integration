@@ -103,7 +103,7 @@ public:
 
     // Internal Data
     vector<Descriptor_2D> descriptors;
-    sc_signal<unsigned int> execute_index;
+    unsigned int execute_index;
     sc_signal<unsigned int> current_ram_index;
     sc_signal<unsigned int> x_count_remaining;
     sc_signal<unsigned int> y_count_remaining;
@@ -117,25 +117,21 @@ public:
 
     void resetAllInternalCounters()
     {
-        current_ram_index = descriptors[execute_index].start;
-        x_count_remaining = descriptors[execute_index].x_count;
-        y_count_remaining = descriptors[execute_index].y_count;
+        current_ram_index = descriptors.at(execute_index).start;
+        x_count_remaining = descriptors.at(execute_index).x_count;
+        y_count_remaining = descriptors.at(execute_index).y_count;
     }
 
     void loadProgram(const vector<Descriptor_2D> &newProgram)
     {
         descriptors.clear();
         copy(newProgram.begin(), newProgram.end(), std::back_inserter(descriptors));
-        execute_index = 0;
-        //     resetAllInternalCounters();
-        //     first_cycle = false;
     }
 
     void resetProgramMemory()
     {
         descriptors.clear();
         descriptors.push_back(default_descriptor);
-        execute_index = 0;
     }
 
     Descriptor_2D currentDescriptor()
@@ -145,7 +141,10 @@ public:
 
     void updateCurrentIndex()
     {
-        x_count_remaining = x_count_remaining - 1;
+        if (x_count_remaining != 0)
+        {
+            x_count_remaining = x_count_remaining - 1;
+        }
         if (x_count_remaining == 0)
         {
             if (y_count_remaining != 0)
@@ -174,7 +173,6 @@ public:
     {
         execute_index = descriptors[execute_index].next;
         resetAllInternalCounters();
-        first_cycle = true;
     }
 
     void update()
@@ -186,42 +184,43 @@ public:
             first_cycle = true;
             // std::cout << "@ " << sc_time_stamp() << " " << this->name() << ":MODULE has been reset" << std::endl;
         }
+        else if (control->program())
+        {
+            //TODO: Extend with programming logic
+            execute_index = 0;
+            resetAllInternalCounters();
+            first_cycle = true;
+        }
         else if (control->enable())
         {
-            // if (first_cycle)
-            // {
-            //     execute_index = 0;
-            //     resetAllInternalCounters();
-            //     first_cycle = false;
-            // }
+            // Update internal logic
+            if (currentDescriptor().state == DescriptorState::GENERATE ||
+                currentDescriptor().state == DescriptorState::WAIT)
+            {
+                if (first_cycle == false)
+                {
+                    updateCurrentIndex();
+                    if (descriptorComplete())
+                    {
+                        loadNextDescriptor();
+                    }
+                }
+                else
+                {
+                    first_cycle = false;
+                }
+            }
+
+            //update external signals
             switch (currentDescriptor().state)
             {
             case DescriptorState::GENERATE:
             {
                 channel->set_enable(true);
                 channel->set_addr(current_ram_index);
-                updateCurrentIndex();
-                if (descriptorComplete())
-                {
-                    loadNextDescriptor();
-                }
                 break;
             }
             case DescriptorState::WAIT:
-            {
-                if (first_cycle)
-                {
-                    resetAllInternalCounters();
-                    first_cycle = false;
-                }
-                channel->set_enable(false);
-                updateCurrentIndex();
-                if (descriptorComplete())
-                {
-                    loadNextDescriptor();
-                }
-                break;
-            }
             case DescriptorState::SUSPENDED:
             {
                 channel->set_enable(false);
@@ -233,6 +232,7 @@ public:
                 exit(-1);
             }
             }
+            // }
         }
     }
 
@@ -241,13 +241,20 @@ public:
                                                                                                 control("control"),
                                                                                                 channel("channel"),
                                                                                                 tf(_tf),
-                                                                                                execute_index("execute_index"),
+                                                                                                // execute_index("execute_index"),
                                                                                                 current_ram_index("current_ram_index"),
                                                                                                 x_count_remaining("x_count_remaining"),
-                                                                                                y_count_remaining("y_count_remaining")
+                                                                                                y_count_remaining("y_count_remaining"),
+                                                                                                first_cycle("first_cycle")
     {
         control(_control);
         _clk(control->clk());
+        execute_index = 0;
+        // sc_trace(tf, this->execute_index, (this->execute_index.name()));
+        sc_trace(tf, this->current_ram_index, (this->current_ram_index.name()));
+        sc_trace(tf, this->x_count_remaining, (this->x_count_remaining.name()));
+        sc_trace(tf, this->y_count_remaining, (this->y_count_remaining.name()));
+        sc_trace(tf, this->first_cycle, (this->first_cycle.name()));
 
         SC_METHOD(update);
         sensitive << _clk.pos();

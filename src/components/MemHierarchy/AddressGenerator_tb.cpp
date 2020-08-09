@@ -29,6 +29,7 @@ struct AddressGenerator_TB : public sc_module
 	bool validate_reset()
 	{
 		cout << "Validating Reset" << endl;
+		control.set_program(false);
 		control.set_reset(false);
 		sc_start(1, SC_NS);
 		control.set_reset(true);
@@ -72,7 +73,9 @@ struct AddressGenerator_TB : public sc_module
 		vector<Descriptor_2D> temp_program;
 		temp_program.push_back(suspend_descriptor);
 		dut.loadProgram(temp_program);
-		control.set_enable(true);
+		control.set_program(true);
+		sc_start(1, SC_NS);
+		control.set_program(false);
 		sc_start(10, SC_NS);
 
 		if(!(dut.descriptors.at(0) == suspend_descriptor))
@@ -114,18 +117,20 @@ struct AddressGenerator_TB : public sc_module
 		control.set_reset(false);
 		sc_start(1, SC_NS);
 		Descriptor_2D wait_descriptor_1(1,0,DescriptorState::WAIT, 2, 2, 0, 0);
-		Descriptor_2D wait_descriptor_2(2,0,DescriptorState::WAIT, 2, 2, 0, 0);
+		Descriptor_2D wait_descriptor_2(2,0,DescriptorState::WAIT, 3, 3, 0, 0);
 		Descriptor_2D suspend_descriptor(3,0,DescriptorState::SUSPENDED, 0, 0, 0, 0);
 		vector<Descriptor_2D> temp_program;
 		temp_program.push_back(wait_descriptor_1);
 		temp_program.push_back(wait_descriptor_2);
 		temp_program.push_back(suspend_descriptor);
 		dut.loadProgram(temp_program);
-		control.set_enable(true);
+		control.set_program(true);
 		// load program and start first descriptor
 		sc_start(1, SC_NS);
+		control.set_program(false);
+		control.set_enable(true);
 		// run descriptors
-		for (unsigned int i = 0; i < 5; i++)
+		for (unsigned int i = 0; i < 10; i++)
 		{
 			sc_start(1, SC_NS);
 		}
