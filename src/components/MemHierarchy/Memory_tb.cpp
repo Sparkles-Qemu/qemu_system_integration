@@ -41,7 +41,6 @@ struct Memory_TB : public sc_module
 		tf->set_time_unit(1, SC_PS);
 		mem.channels[0](rchannel);
 		mem.channels[1](wchannel);
-
 		cout << "Instantiated Memory TB with name " << this->name() << endl;
 	}
 
