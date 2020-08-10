@@ -1,0 +1,8 @@
+[
+
+    {
+        "directory": "/home/sultan/Documents/research/qemu_system_integration/src/components/MemHierarchy/",
+        "command": "//usr/lib/llvm-9/bin/clang -Irelative -I./ -I../ -I../ComponentTests/ -I../DMA/ -I../Left/ -I../MemHierarchy/ -I../MultiplyAndAccumulate/ -I../MultiplyAndAccumulate/.libs/ -I../Processor/ -I../Right/ -I../Util/ -I/usr/local/systemc-2.3.3/include/ Memory_tb.cpp AddressGenerator_tb",
+      "file": "Memory_tb.cpp AddressGenerator_tb"}
+
+]  
