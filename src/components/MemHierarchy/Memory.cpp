@@ -155,7 +155,7 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
     void register_port(sc_port_base &port_,
                        const char *if_typename_)
     {
-        cout << "binding    " << port_.name() << " to "
+        cout << "now binding    " << port_.name() << " to "
              << "interface: " << if_typename_ << " with channel width " << channel_width << endl;
     }
 };
