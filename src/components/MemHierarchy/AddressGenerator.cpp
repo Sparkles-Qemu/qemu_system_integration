@@ -99,7 +99,7 @@ public:
     y_count_remaining = descriptors[execute_index].y_count;
   }
 
-  void resetAllInternalCounters() {
+  void loadInternalCountersFromCurrentDescriptor() {
     current_ram_index = descriptors.at(execute_index).start;
     x_count_remaining = descriptors.at(execute_index).x_count;
     y_count_remaining = descriptors.at(execute_index).y_count;
@@ -111,6 +111,7 @@ public:
   }
 
   void resetProgramMemory() {
+    execute_index = 0;
     descriptors.clear();
     descriptors.push_back(default_descriptor);
   }
@@ -140,13 +141,13 @@ public:
 
   void loadNextDescriptor() {
     execute_index = descriptors[execute_index].next;
-    resetAllInternalCounters();
+    loadInternalCountersFromCurrentDescriptor();
   }
 
   void update() {
     if (control->reset()) {
       resetProgramMemory();
-      resetAllInternalCounters();
+      loadInternalCountersFromCurrentDescriptor();
       first_cycle = true;
       programmed = false;
       std::cout << "@ " << sc_time_stamp() << " " << this->name()
@@ -154,7 +155,7 @@ public:
     } else if (control->program()) {
       // TODO: Extend with programming logic
       execute_index = 0;
-      resetAllInternalCounters();
+      loadInternalCountersFromCurrentDescriptor();
       first_cycle = true;
       programmed = true;
     } else if (control->enable() && programmed) {
