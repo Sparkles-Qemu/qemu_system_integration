@@ -122,6 +122,7 @@ public:
     if (x_count_remaining != 0) {
       x_count_remaining = x_count_remaining - 1;
     }
+    
     if (x_count_remaining == 0) {
       if (y_count_remaining != 0) {
         current_ram_index = current_ram_index + currentDescriptor().y_modify;
