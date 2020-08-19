@@ -5,6 +5,7 @@
 #include "vector"
 #include <GlobalControl.cpp>
 #include <Memory.cpp>
+#include <VectorCreator.cpp>
 #include <assert.h>
 #include <iostream>
 #include <string>
@@ -80,6 +81,9 @@ struct Descriptor_2D
 Descriptor_2D default_descriptor = {0, 0, DescriptorState::SUSPENDED, 0, 0,
                                     0, 0};
 
+
+
+
 template <typename DataType>
 struct AddressGenerator : public sc_module
 {
@@ -88,7 +92,6 @@ private:
     sc_in_clk _clk;
 
 public:
-    // sc_in<bool> clk, reset, enable;
     sc_port<GlobalControlChannel_IF> control;
     sc_port<MemoryChannel_IF<DataType>> channel;
     sc_trace_file* tf;
@@ -165,8 +168,6 @@ public:
         return (x_count_remaining == 0 && y_count_remaining == 0);
     }
 
-
-
     void loadNextDescriptor()
     {
         execute_index = currentDescriptor().next;
@@ -226,7 +227,6 @@ public:
                 exit(-1);
             }
             }
-            // }
         }
     }
 
@@ -259,5 +259,8 @@ public:
 
     SC_HAS_PROCESS(AddressGenerator);
 };
+
+template <typename DataType>
+using AddressGeneratorCreator = GenericCreator<AddressGenerator<DataType>>;
 
 #endif

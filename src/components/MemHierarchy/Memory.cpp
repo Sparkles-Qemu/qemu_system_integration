@@ -26,6 +26,8 @@ public:
     virtual const sc_vector<sc_signal<DataType>>& mem_read_data() = 0;
     virtual void mem_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
     virtual const sc_vector<sc_signal<DataType>>& channel_read_data() = 0;
+    virtual sc_vector<sc_signal<DataType>>& get_channel_read_data_bus() = 0;
+    virtual sc_vector<sc_signal<DataType>>& get_channel_write_data_bus() = 0;
     virtual void channel_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
     virtual void channel_write_data_element(DataType _data, unsigned int col) = 0;
     virtual unsigned int addr() = 0;
@@ -67,6 +69,8 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         sc_trace(tf, this->channel_addr, (string(this->channel_addr.name())));
         sc_trace(tf, this->channel_enabled, (string(this->channel_enabled.name())));
         sc_trace(tf, this->channel_mode, (string(this->channel_mode.name())));
+
+        cout << "MEMORY_CHANNEL CHANNEL: " << name << " has been instantiated " << endl;
     }
 
     const sc_vector<sc_signal<DataType>>& mem_read_data()
@@ -86,6 +90,16 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
     const sc_vector<sc_signal<DataType>>& channel_read_data()
     {
         return read_channel_data;
+    }
+
+    sc_vector<sc_signal<DataType>>& get_channel_read_data_bus()
+    {
+        return read_channel_data;
+    }
+
+    sc_vector<sc_signal<DataType>>& get_channel_write_data_bus()
+    {
+        return write_channel_data;
     }
 
     void channel_write_data(const sc_vector<sc_signal<DataType>>& _data)
