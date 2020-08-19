@@ -47,9 +47,9 @@ struct AddressGenerator_TB : public sc_module
             cout << "dut.execute_index == 0 FAILED!" << endl;
             return false;
         }
-        if (!(dut.current_ram_index == 0))
+        if (!(mem_channel.addr() == 0))
         {
-            cout << "dut.current_ram_index == 0 FAILED!" << endl;
+            cout << "mem_channel.addr() == 0 FAILED!" << endl;
             return false;
         }
         if (!(dut.x_count_remaining == 0))
@@ -135,7 +135,6 @@ struct AddressGenerator_TB : public sc_module
         control.set_program(false);
         control.set_enable(true);
         // run descriptors
-        sc_start(1, SC_NS);
 
         cout << "validate initial condition at first cycle" << endl;
         if (!(dut.current_ram_index == 0))
@@ -189,7 +188,6 @@ struct AddressGenerator_TB : public sc_module
     }
     bool validate_generation_1D()
     {
-
         cout << "Validating verify_generation_1D" << endl;
         control.set_enable(false);
         control.set_reset(true);
@@ -215,18 +213,10 @@ struct AddressGenerator_TB : public sc_module
         control.set_program(false);
         control.set_enable(true);
         // run descriptors
-        sc_start(1, SC_NS);
 
-        cout << "validate initial condition at first cycle" << endl;
-        if (!(dut.first_cycle == false))
+        if (!(mem_channel.addr() == 10))
         {
-            cout << "dut.first_cycle == false FAILED!" << endl;
-            return false;
-        }
-
-        if (!(dut.current_ram_index == 10))
-        {
-            cout << "dut.current_ram_index == 10 FAILED!" << endl;
+            cout << "mem_channel.addr() == 10 FAILED!" << endl;
             return false;
         }
         if (!(dut.currentDescriptor() == generate_1D_descriptor_1))
@@ -242,9 +232,9 @@ struct AddressGenerator_TB : public sc_module
         for (unsigned int i = 12; i <= 30; i += 2)
         {
             sc_start(1, SC_NS);
-            if (!(dut.current_ram_index == i))
+            if (!(mem_channel.addr() == i))
             {
-                cout << "dut.current_ram_index == " << i << " FAILED!" << endl;
+                cout << "mem_channel.addr() == " << i << " FAILED!" << endl;
                 return false;
             }
         }
@@ -254,9 +244,9 @@ struct AddressGenerator_TB : public sc_module
                 "generate descriptor"
              << endl;
         sc_start(1, SC_NS);
-        if (!(dut.current_ram_index == 20))
+        if (!(mem_channel.addr() == 20))
         {
-            cout << "dut.current_ram_index == 20 FAILED!" << endl;
+            cout << "mem_channel.addr() == 20 FAILED!" << endl;
             return false;
         }
         if (!(dut.currentDescriptor() == generate_1D_descriptor_2))
@@ -271,11 +261,16 @@ struct AddressGenerator_TB : public sc_module
         for (unsigned int i = 19; i >= 10; i -= 1)
         {
             sc_start(1, SC_NS);
-            if (!(dut.current_ram_index == i))
+            if (!(mem_channel.addr() == i))
             {
-                cout << "dut.current_ram_index == " << i << " FAILED!" << endl;
+                cout << "mem_channel.addr() == " << i << " FAILED!" << endl;
                 return false;
             }
+            // if (!(mem_channel.addr() == i))
+            // {
+            //     cout << "mem_channel.addr() == i FAILED!" << endl;
+            //     return false;
+            // }
         }
         cout << "validate success!" << endl;
 
@@ -308,6 +303,7 @@ struct AddressGenerator_TB : public sc_module
         control.set_program(true);
         // load program and start first descriptor
         sc_start(1, SC_NS);
+
         control.set_program(false);
         control.set_enable(true);
         bool first_cycle = true;
@@ -322,15 +318,9 @@ struct AddressGenerator_TB : public sc_module
         {
             for (j = 0; j <= 10; j++)
             {
-                sc_start(1, SC_NS);
                 if (first_cycle)
                 {
                     cout << "\t validate initial condition at first cycle" << endl;
-                    if (!(dut.first_cycle == false))
-                    {
-                        cout << "dut.first_cycle == false FAILED!" << endl;
-                        return false;
-                    }
                     if (!(dut.currentDescriptor() == generate_2D_descriptor_1))
                     {
                         cout
@@ -341,17 +331,19 @@ struct AddressGenerator_TB : public sc_module
                     cout << "\t validate success!" << endl;
                     first_cycle = false;
                 }
-                if (!(dut.current_ram_index == index))
+                if (!(mem_channel.addr() == index))
                 {
-                    cout << "dut.current_ram_index == index FAILED!" << endl;
+                    cout << "mem_channel.addr() == index FAILED!" << endl;
                     return false;
                 }
                 if (j != 10)
                 {
                     index += 2;
                 }
+                sc_start(1, SC_NS);
             }
             index += 5;
+            
         }
 
         cout << "validate success!" << endl;
@@ -365,7 +357,6 @@ struct AddressGenerator_TB : public sc_module
         {
             for (j = 0; j <= 10; j++)
             {
-                sc_start(1, SC_NS);
                 if (first_cycle)
                 {
                     cout
@@ -383,15 +374,16 @@ struct AddressGenerator_TB : public sc_module
 
                     first_cycle = false;
                 }
-                if (!(dut.current_ram_index == index))
+                if (!(mem_channel.addr() == index))
                 {
-                    cout << "dut.current_ram_index == index FAILED!" << endl;
+                    cout << "mem_channel.addr() == index FAILED!" << endl;
                     return false;
                 }
                 if (j != 10)
                 {
                     index -= 1;
                 }
+                sc_start(1, SC_NS);
             }
             index -= 5;
         }
@@ -430,7 +422,7 @@ struct AddressGenerator_TB : public sc_module
 
         if (!(validate_generation_2D()))
         {
-            cout << "validate_generation_1D() FAILED!" << endl;
+            cout << "validate_generation_2D() FAILED!" << endl;
             return -1;
         }
 

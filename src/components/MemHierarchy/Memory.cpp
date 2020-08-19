@@ -161,26 +161,24 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 };
 
 template <typename DataType>
-struct MemoryChannelCreator
+struct MemoryRowCreator
 {
-    MemoryChannelCreator(unsigned int _width, sc_trace_file* _tf) : tf(_tf), width(_width) {}
-
-    MemoryChannel<DataType>* operator()(const char* name, size_t)
+    MemoryRowCreator(unsigned int _width, sc_trace_file* _tf) : tf(_tf), width(_width) {}
+    sc_vector<sc_signal<DataType>>* operator()(const char* name, size_t)
     {
-        return new MemoryChannel<DataType>(name, width, tf);
+        return new sc_vector<sc_signal<DataType>>(name, width);
     }
     sc_trace_file* tf;
     unsigned int width;
 };
 
 template <typename DataType>
-struct MemoryRowCreator
+struct MemoryChannelCreator
 {
-    MemoryRowCreator(unsigned int _width, sc_trace_file* _tf) : tf(_tf), width(_width) {}
-
-    sc_vector<sc_signal<DataType>>* operator()(const char* name, size_t)
+    MemoryChannelCreator(unsigned int _width, sc_trace_file* _tf) : tf(_tf), width(_width) {}
+    MemoryChannel<DataType>* operator()(const char* name, size_t)
     {
-        return new sc_vector<sc_signal<DataType>>(name, width);
+        return new MemoryChannel<DataType>(name, width, tf);
     }
     sc_trace_file* tf;
     unsigned int width;
@@ -225,7 +223,6 @@ public:
                             ram[channel->addr()][i] = channel->mem_read_data()[i];
                         }
                         break;
-
                     case MemoryChannelMode::READ:
                         assert(channel->get_width() == width);
                         channel->mem_write_data(ram[channel->addr()]);

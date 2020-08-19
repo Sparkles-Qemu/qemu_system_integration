@@ -1,4 +1,4 @@
-#ifndef ADDRESS_GENERATOR_CPP 
+#ifndef ADDRESS_GENERATOR_CPP
 #define ADDRESS_GENERATOR_CPP
 
 #include "map"
@@ -95,12 +95,11 @@ public:
 
     // Internal Data
     vector<Descriptor_2D> descriptors;
-    unsigned int execute_index;
+    sc_signal<unsigned int> execute_index;
     sc_signal<unsigned int> current_ram_index;
     sc_signal<unsigned int> x_count_remaining;
     sc_signal<unsigned int> y_count_remaining;
     sc_signal<bool> programmed;
-    sc_signal<bool> first_cycle;
 
     void resetIndexingCounters()
     {
@@ -108,11 +107,11 @@ public:
         y_count_remaining = descriptors[execute_index].y_count;
     }
 
-    void loadInternalCountersFromCurrentDescriptor()
+    void loadInternalCountersFromIndex(unsigned int index)
     {
-        current_ram_index = descriptors.at(execute_index).start;
-        x_count_remaining = descriptors.at(execute_index).x_count;
-        y_count_remaining = descriptors.at(execute_index).y_count;
+        current_ram_index = descriptors.at(index).start;
+        x_count_remaining = descriptors.at(index).x_count;
+        y_count_remaining = descriptors.at(index).y_count;
     }
 
     void loadProgram(const vector<Descriptor_2D>& newProgram)
@@ -128,7 +127,8 @@ public:
         descriptors.push_back(default_descriptor);
     }
 
-    Descriptor_2D currentDescriptor() { return descriptors[execute_index]; }
+    Descriptor_2D currentDescriptor() { return descriptors.at(execute_index); }
+    Descriptor_2D nextDescriptor() { return descriptors.at(descriptors[execute_index].next); }
 
     void updateCurrentIndex()
     {
@@ -142,6 +142,8 @@ public:
             if (y_count_remaining != 0)
             {
                 current_ram_index = current_ram_index + currentDescriptor().y_modify;
+                // HACK WITH CHANNEL->SET_ADDR
+                channel->set_addr(current_ram_index + currentDescriptor().y_modify);
                 x_count_remaining = currentDescriptor().x_count;
                 y_count_remaining = y_count_remaining - 1;
             }
@@ -152,7 +154,9 @@ public:
         }
         else
         {
+            // HACK WITH CHANNEL->SET_ADDR
             current_ram_index = current_ram_index + currentDescriptor().x_modify;
+            channel->set_addr(current_ram_index + currentDescriptor().x_modify);
         }
     }
 
@@ -161,10 +165,13 @@ public:
         return (x_count_remaining == 0 && y_count_remaining == 0);
     }
 
+
+
     void loadNextDescriptor()
     {
-        execute_index = descriptors[execute_index].next;
-        loadInternalCountersFromCurrentDescriptor();
+        execute_index = currentDescriptor().next;
+        loadInternalCountersFromIndex(currentDescriptor().next);
+        channel->set_addr(nextDescriptor().start);
     }
 
     void update()
@@ -172,8 +179,7 @@ public:
         if (control->reset())
         {
             resetProgramMemory();
-            loadInternalCountersFromCurrentDescriptor();
-            first_cycle = true;
+            loadInternalCountersFromIndex(0);
             programmed = false;
             std::cout << "@ " << sc_time_stamp() << " " << this->name()
                       << ":MODULE has been reset" << std::endl;
@@ -182,8 +188,8 @@ public:
         {
             // TODO: Extend with programming logic
             execute_index = 0;
-            loadInternalCountersFromCurrentDescriptor();
-            first_cycle = true;
+            loadInternalCountersFromIndex(0);
+            channel->set_addr(descriptors.at(0).start);
             programmed = true;
         }
         else if (control->enable() && programmed)
@@ -192,27 +198,19 @@ public:
             if (currentDescriptor().state == DescriptorState::GENERATE ||
                 currentDescriptor().state == DescriptorState::WAIT)
             {
-                if (first_cycle == false)
+                updateCurrentIndex();
+                if (descriptorComplete())
                 {
-                    updateCurrentIndex();
-                    if (descriptorComplete())
-                    {
-                        loadNextDescriptor();
-                    }
-                }
-                else
-                {
-                    first_cycle = false;
+                    loadNextDescriptor();
                 }
             }
 
-            // update external signals
+            // update external signals NOTE SEE HACK WITH CHANNEL->SET_ADDR
             switch (currentDescriptor().state)
             {
             case DescriptorState::GENERATE:
             {
                 channel->set_enable(true);
-                channel->set_addr(current_ram_index);
                 break;
             }
             case DescriptorState::WAIT:
@@ -236,19 +234,19 @@ public:
     AddressGenerator(sc_module_name name, GlobalControlChannel& _control,
                      sc_trace_file* _tf)
         : sc_module(name), control("control"), channel("channel"), tf(_tf),
-          // execute_index("execute_index"),
+          execute_index("execute_index"),
           current_ram_index("current_ram_index"),
           x_count_remaining("x_count_remaining"),
-          y_count_remaining("y_count_remaining"), first_cycle("first_cycle")
+          y_count_remaining("y_count_remaining")
     {
         control(_control);
         _clk(control->clk());
         execute_index = 0;
         // sc_trace(tf, this->execute_index, (this->execute_index.name()));
+        sc_trace(tf, this->execute_index, (this->execute_index.name()));
         sc_trace(tf, this->current_ram_index, (this->current_ram_index.name()));
         sc_trace(tf, this->x_count_remaining, (this->x_count_remaining.name()));
         sc_trace(tf, this->y_count_remaining, (this->y_count_remaining.name()));
-        sc_trace(tf, this->first_cycle, (this->first_cycle.name()));
 
         SC_METHOD(update);
         sensitive << _clk.pos();

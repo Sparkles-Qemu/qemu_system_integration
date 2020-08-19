@@ -15,9 +15,6 @@ using std::endl;
 using std::string;
 
 template <typename DataType>
-using AddressGeneratorCreator = GenericCreator<AddressGenerator<DataType>>;
-
-template <typename DataType>
 struct DataPortCreator
 {
     DataPortCreator(unsigned int _width, sc_trace_file* _tf)
@@ -31,6 +28,9 @@ struct DataPortCreator
 };
 
 template <typename DataType>
+using AddressGeneratorCreator = GenericCreator<AddressGenerator<DataType>>;
+
+template <typename DataType>
 using InDataPortCreator = DataPortCreator<sc_in<DataType>>;
 
 template <typename DataType>
@@ -42,7 +42,6 @@ struct SAM : public sc_module
     // Member Signals
 private:
     sc_in_clk _clk;
-
 public:
     sc_port<GlobalControlChannel_IF> control;
     Memory<DataType> mem;
@@ -66,8 +65,11 @@ public:
         unsigned int _channel_count, unsigned int _length,
         unsigned int _width, sc_trace_file* tf)
         : sc_module(name),
-          mem("mem", _control, _channel_count, _length, _width, tf)
-
+          mem("mem", _control, _channel_count, _length, _width, tf),
+          generators("generator", _channel_count, AddressGeneratorCreator<DataType>(_control, tf)),
+          channels("mem_channels", _channel_count, MemoryChannelCreator<DataType>(_width, tf)),
+          read_channel_data("read_channel_data", _channel_count, InDataPortCreator<DataType>(_width, tf)),
+          write_channel_data("write_channel_data", _channel_count, OutDataPortCreator<DataType>(_width, tf))
     {
         _clk(control->clk());
         SC_METHOD(update);

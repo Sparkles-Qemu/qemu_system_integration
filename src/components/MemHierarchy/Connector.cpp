@@ -22,9 +22,9 @@ struct Connector : public GenericConnector
     ConnectionType data;
     Connector(sc_module_name name, sc_module_name connection_name, sc_trace_file *_tf) : GenericConnector(name), data(connection_name)
     {
-        
-    }
 
+
+    }
 };
 
 #endif
