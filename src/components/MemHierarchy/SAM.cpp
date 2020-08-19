@@ -73,16 +73,17 @@ public:
           width(_width),
           channel_count(_channel_count)
     {
+        control(_control);
         _clk(control->clk());
         SC_METHOD(update);
         sensitive << _clk.pos();
         sensitive << control->reset();
 
-        for (unsigned int channel_index; channel_index < channel_count; channel_index++)
+        for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
         {
             generators[channel_index].channel(channels.at(channel_index));
             mem.channels[channel_index](channels.at(channel_index));
-            for (unsigned int data_index; data_index < width; data_index++)
+            for (unsigned int data_index = 0; data_index < width; data_index++)
             {
                 read_channel_data[channel_index][data_index](channels[channel_index].get_channel_read_data_bus()[data_index]);
                 write_channel_data[channel_index][data_index](channels[channel_index].get_channel_write_data_bus()[data_index]);
@@ -91,7 +92,6 @@ public:
                 sc_trace(tf, write_channel_data[channel_index][data_index], write_channel_data[channel_index][data_index].name());
             }
         }
-
         cout << " SAM MODULE: " << name << " has been instantiated "
              << endl;
     }

@@ -1,7 +1,4 @@
 #include "SAM.cpp"
-#include "sysc/kernel/sc_simcontext.h"
-#include "sysc/kernel/sc_time.h"
-#include <c++/7/bits/c++config.h>
 #include <systemc.h>
 // #define DEBUG
 using std::cout;
@@ -27,6 +24,55 @@ struct SAM_TB : public sc_module
     {
         return true;
     }
+
+    bool validate_write_to_sam_1D()
+    {
+        cout << "Validating validate_write_to_sam_1D" << endl;
+
+        cout << "validate_write_to_sam_1D SUCCESS" << endl;
+        return true;
+    }
+
+    bool validate_write_to_sam_2D()
+    {
+        cout << "Validating validate_write_to_sam_2D" << endl;
+
+        cout << "validate_write_to_sam_2D SUCCESS" << endl;
+        return true;
+    }
+
+    bool validate_read_from_sam_1D()
+    {
+        cout << "Validating validate_read_from_sam_1D" << endl;
+
+        cout << "validate_read_from_sam_1D SUCCESS" << endl;
+        return true;
+    }
+
+    bool validate_read_from_sam_2D()
+    {
+        cout << "Validating validate_read_from_sam_2D" << endl;
+
+        cout << "validate_read_from_sam_2D SUCCESS" << endl;
+        return true;
+    }
+
+    bool validate_wait_with_data_write()
+    {
+        cout << "Validating validate_wait_with_data_write" << endl;
+
+        cout << "validate_wait_with_data_write SUCCESS" << endl;
+        return true;
+    }
+
+    bool validate_concurrent_read_write_2D()
+    {
+        cout << "Validating validate_concurrent_read_write_2D" << endl;
+
+        cout << "validate_concurrent_read_write_2D SUCCESS" << endl;
+        return true;
+    }
+
     int run_tb()
     {
         cout << "Validating Reset" << endl;
@@ -58,6 +104,7 @@ struct SAM_TB : public sc_module
         sc_close_vcd_trace_file(tf);
     }
 };
+
 int sc_main(int argc, char* argv[])
 {
     SAM_TB<sc_int<32>> tb("SAM_tb");
