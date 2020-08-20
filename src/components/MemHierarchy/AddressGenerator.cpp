@@ -103,6 +103,7 @@ public:
     sc_signal<unsigned int> x_count_remaining;
     sc_signal<unsigned int> y_count_remaining;
     sc_signal<bool> programmed;
+    sc_signal<bool> first_cycle;
 
     void resetIndexingCounters()
     {
@@ -177,11 +178,14 @@ public:
 
     void update()
     {
+
         if (control->reset())
         {
             resetProgramMemory();
             loadInternalCountersFromIndex(0);
             programmed = false;
+            first_cycle = false;
+            channel->control_reset();
             std::cout << "@ " << sc_time_stamp() << " " << this->name()
                       << ":MODULE has been reset" << std::endl;
         }
@@ -192,12 +196,17 @@ public:
             loadInternalCountersFromIndex(0);
             channel->set_addr(descriptors.at(0).start);
             programmed = true;
+            first_cycle = true;
+            if(descriptors.at(0).state == DescriptorState::GENERATE)
+            {
+                channel->set_enable(true);
+            }
         }
         else if (control->enable() && programmed)
         {
             // Update internal logic
-            if (currentDescriptor().state == DescriptorState::GENERATE ||
-                currentDescriptor().state == DescriptorState::WAIT)
+            if (!first_cycle && (currentDescriptor().state == DescriptorState::GENERATE ||
+                currentDescriptor().state == DescriptorState::WAIT))
             {
                 updateCurrentIndex();
                 if (descriptorComplete())
@@ -205,6 +214,11 @@ public:
                     loadNextDescriptor();
                 }
             }
+            else
+            {
+                first_cycle = false;
+            }
+            
 
             // update external signals NOTE SEE HACK WITH CHANNEL->SET_ADDR
             switch (currentDescriptor().state)

@@ -26,6 +26,7 @@ public:
     virtual const sc_vector<sc_signal<DataType>>& mem_read_data() = 0;
     virtual void mem_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
     virtual const sc_vector<sc_signal<DataType>>& channel_read_data() = 0;
+    virtual const DataType& channel_read_data_element(unsigned int col) = 0;
     virtual sc_vector<sc_signal<DataType>>& get_channel_read_data_bus() = 0;
     virtual sc_vector<sc_signal<DataType>>& get_channel_write_data_bus() = 0;
     virtual void channel_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
@@ -34,7 +35,8 @@ public:
     virtual void set_addr(unsigned int addr) = 0;
     virtual bool enabled() = 0;
     virtual void set_enable(bool status) = 0;
-    virtual void reset() = 0;
+    virtual void control_reset() = 0;
+    virtual void bus_reset() = 0;
     virtual const unsigned int& get_width() = 0;
 };
 
@@ -92,6 +94,12 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         return read_channel_data;
     }
 
+    const DataType& channel_read_data_element(unsigned int col)
+    {
+        assert(col <= channel_width && col >= 0);
+        return read_channel_data.at(col);
+    }
+
     sc_vector<sc_signal<DataType>>& get_channel_read_data_bus()
     {
         return read_channel_data;
@@ -146,7 +154,16 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         return channel_mode.read();
     }
 
-    void reset()
+    void control_reset()
+    {
+        channel_addr = 0;
+        channel_enabled = false;
+        channel_mode = MemoryChannelMode::READ;
+        std::cout << "@ " << sc_time_stamp() << " " << this->name()
+                  << ":control in channel has been reset" << std::endl;
+    }
+
+    void bus_reset()
     {
         for (auto& data : read_channel_data)
         {
@@ -156,9 +173,8 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         {
             data = 0;
         }
-        channel_addr = 0;
-        channel_enabled = false;
-        channel_mode = MemoryChannelMode::READ;
+        std::cout << "@ " << sc_time_stamp() << " " << this->name()
+                  << ":busses in channel have been reset" << std::endl;
     }
 
     const unsigned int& get_width()
@@ -205,10 +221,10 @@ private:
     sc_in_clk _clk;
     // Control Signals
 public:
-    unsigned int length, width;
     sc_vector<sc_vector<sc_signal<DataType>>> ram;
     sc_port<GlobalControlChannel_IF> control;
     sc_vector<sc_port<MemoryChannel_IF<DataType>>> channels;
+    const unsigned int width, length, channel_count;
 
     void update()
     {
@@ -221,25 +237,27 @@ public:
                     col = 0;
                 }
             }
+            std::cout << "@ " << sc_time_stamp() << " " << this->name()
+                      << ":MODULE has been reset" << std::endl;
         }
         else if (control->enable())
         {
-            for (auto& channel : channels)
+            for (unsigned int channel_idx = 0; channel_idx < channel_count; channel_idx++)
             {
-                if (channel->enabled())
+                if (channels[channel_idx]->enabled())
                 {
-                    switch (channel->mode())
+                    switch (channels[channel_idx]->mode())
                     {
                     case MemoryChannelMode::WRITE:
-                        assert(channel->get_width() == width);
+                        assert(channels[channel_idx]->get_width() == width);
                         for (unsigned int i = 0; i < width; i++)
                         {
-                            ram[channel->addr()][i] = channel->mem_read_data()[i];
+                            ram[channels[channel_idx]->addr()][i] = channels[channel_idx]->mem_read_data()[i];
                         }
                         break;
                     case MemoryChannelMode::READ:
-                        assert(channel->get_width() == width);
-                        channel->mem_write_data(ram[channel->addr()]);
+                        assert(channels[channel_idx]->get_width() == width);
+                        channels[channel_idx]->mem_write_data(ram[channels[channel_idx]->addr()]);
                         break;
                     }
                 }
@@ -269,11 +287,11 @@ public:
         sc_trace_file* tf) : sc_module(name),
                              ram("ram", _length, MemoryRowCreator<DataType>(_width, tf)),
                              control("control"),
-                             channels("channel", _channel_count)
+                             channels("channel", _channel_count),
+                             width(_width),
+                             length(_length),
+                             channel_count(_channel_count)
     {
-        length = _length;
-        width = _width;
-
         for (unsigned int row = 0; row < length; row++)
         {
             for (unsigned int col = 0; col < width; col++)

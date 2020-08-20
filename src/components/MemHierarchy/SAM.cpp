@@ -28,10 +28,10 @@ struct SAMDataPortCreator
 };
 
 template <typename DataType>
-using InDataPortCreator = SAMDataPortCreator<sc_in<DataType>>;
+using InDataPortCreator = SAMDataPortCreator<sc_out<DataType>>;
 
 template <typename DataType>
-using OutDataPortCreator = SAMDataPortCreator<sc_out<DataType>>;
+using OutDataPortCreator = SAMDataPortCreator<sc_in<DataType>>;
 
 template <typename DataType>
 struct SAM : public sc_module
@@ -45,8 +45,8 @@ public:
     Memory<DataType> mem;
     sc_vector<AddressGenerator<DataType>> generators;
     sc_vector<MemoryChannel<DataType>> channels;
-    sc_vector<sc_vector<sc_in<DataType>>> read_channel_data;
-    sc_vector<sc_vector<sc_out<DataType>>> write_channel_data;
+    sc_vector<sc_vector<sc_out<DataType>>> read_channel_data;
+    sc_vector<sc_vector<sc_in<DataType>>> write_channel_data;
     const unsigned int length, width, channel_count;
 
     void update()
@@ -55,6 +55,41 @@ public:
         {
         }
         else if (control->enable())
+        {
+            // for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
+            // {
+            //     if(channels[channel_index].enabled())
+            //     {
+            //         for (unsigned int data_index = 0; data_index < width; data_index++)
+            //         {
+            //             write_channel_data[channel_index][data_index].write(channels[channel_index].channel_read_data_element(data_index));
+            //             channels[channel_index].channel_write_data_element(read_channel_data[channel_index][data_index].read(), data_index);
+            //         }
+            //     }
+            // }
+        }
+    }
+
+    void in_port_propogate()
+    {
+        if (control->enable())
+        {
+            for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
+            {
+                if(channels[channel_index].enabled())
+                {
+                    for (unsigned int bus_index = 0; bus_index < width; bus_index++)
+                    {
+                        channels[channel_index].channel_write_data_element(write_channel_data[channel_index][bus_index].read(), bus_index); 
+                    }
+                }
+            }
+        }
+    }
+
+    void out_port_propogate()
+    {
+        if (control->enable())
         {
         }
     }
@@ -79,19 +114,33 @@ public:
         sensitive << _clk.pos();
         sensitive << control->reset();
 
+        SC_METHOD(in_port_propogate);
+
+        for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
+        {
+            for (unsigned int data_index = 0; data_index < width; data_index++)
+            {
+                sensitive << write_channel_data[channel_index][data_index];
+                sc_trace(tf, write_channel_data[channel_index][data_index], write_channel_data[channel_index][data_index].name());
+            }
+        }
+
+        SC_METHOD(out_port_propogate)
+
+        for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
+        {
+            for (unsigned int data_index = 0; data_index < width; data_index++)
+            {
+                sensitive << channels[channel_index].get_channel_read_data_bus()[data_index];
+            }
+        }
+
         for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
         {
             generators[channel_index].channel(channels.at(channel_index));
             mem.channels[channel_index](channels.at(channel_index));
-            for (unsigned int data_index = 0; data_index < width; data_index++)
-            {
-                read_channel_data[channel_index][data_index](channels[channel_index].get_channel_read_data_bus()[data_index]);
-                write_channel_data[channel_index][data_index](channels[channel_index].get_channel_write_data_bus()[data_index]);
-
-                sc_trace(tf, read_channel_data[channel_index][data_index], read_channel_data[channel_index][data_index].name());
-                sc_trace(tf, write_channel_data[channel_index][data_index], write_channel_data[channel_index][data_index].name());
-            }
         }
+
         cout << " SAM MODULE: " << name << " has been instantiated "
              << endl;
     }
