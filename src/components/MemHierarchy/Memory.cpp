@@ -21,22 +21,24 @@ template <typename DataType>
 struct MemoryChannel_IF : virtual public sc_interface
 {
 public:
-    virtual const MemoryChannelMode& mode() = 0;
+    //control
+    virtual void reset() = 0;
+    virtual void set_enable(bool status) = 0;
+    virtual void set_addr(unsigned int addr) = 0;
     virtual void set_mode(MemoryChannelMode mode) = 0;
-    virtual const sc_vector<sc_signal<DataType>>& mem_read_data() = 0;
+
+    //Data
+    virtual const MemoryChannelMode& mode() = 0;
+    virtual const sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& mem_read_data() = 0;
     virtual void mem_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
     virtual const sc_vector<sc_signal<DataType>>& channel_read_data() = 0;
     virtual const DataType& channel_read_data_element(unsigned int col) = 0;
     virtual sc_vector<sc_signal<DataType>>& get_channel_read_data_bus() = 0;
-    virtual sc_vector<sc_signal<DataType>>& get_channel_write_data_bus() = 0;
+    virtual sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& get_channel_write_data_bus() = 0;
     virtual void channel_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
     virtual void channel_write_data_element(DataType _data, unsigned int col) = 0;
     virtual unsigned int addr() = 0;
-    virtual void set_addr(unsigned int addr) = 0;
     virtual bool enabled() = 0;
-    virtual void set_enable(bool status) = 0;
-    virtual void control_reset() = 0;
-    virtual void bus_reset() = 0;
     virtual const unsigned int& get_width() = 0;
 };
 
@@ -44,7 +46,7 @@ template <typename DataType>
 struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 {
     sc_vector<sc_signal<DataType>> read_channel_data;
-    sc_vector<sc_signal<DataType>> write_channel_data;
+    sc_vector<sc_signal<DataType, SC_MANY_WRITERS>> write_channel_data;
     sc_signal<unsigned int> channel_addr;
     sc_signal<bool> channel_enabled;
     sc_signal<MemoryChannelMode> channel_mode;
@@ -75,7 +77,7 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         cout << "MEMORY_CHANNEL CHANNEL: " << name << " has been instantiated " << endl;
     }
 
-    const sc_vector<sc_signal<DataType>>& mem_read_data()
+    const sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& mem_read_data()
     {
         return write_channel_data;
     }
@@ -105,7 +107,7 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         return read_channel_data;
     }
 
-    sc_vector<sc_signal<DataType>>& get_channel_write_data_bus()
+    sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& get_channel_write_data_bus()
     {
         return write_channel_data;
     }
@@ -154,16 +156,7 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         return channel_mode.read();
     }
 
-    void control_reset()
-    {
-        channel_addr = 0;
-        channel_enabled = false;
-        channel_mode = MemoryChannelMode::READ;
-        std::cout << "@ " << sc_time_stamp() << " " << this->name()
-                  << ":control in channel has been reset" << std::endl;
-    }
-
-    void bus_reset()
+    void reset()
     {
         for (auto& data : read_channel_data)
         {
@@ -173,8 +166,11 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         {
             data = 0;
         }
+        channel_addr = 0;
+        channel_enabled = false;
+        channel_mode = MemoryChannelMode::READ;
         std::cout << "@ " << sc_time_stamp() << " " << this->name()
-                  << ":busses in channel have been reset" << std::endl;
+                  << ": channel has been reset" << std::endl;
     }
 
     const unsigned int& get_width()

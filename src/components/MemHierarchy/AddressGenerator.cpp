@@ -185,7 +185,7 @@ public:
             loadInternalCountersFromIndex(0);
             programmed = false;
             first_cycle = false;
-            channel->control_reset();
+            channel->reset();
             std::cout << "@ " << sc_time_stamp() << " " << this->name()
                       << ":MODULE has been reset" << std::endl;
         }

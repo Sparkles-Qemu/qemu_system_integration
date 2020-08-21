@@ -47,10 +47,7 @@ struct SAM_TB : public sc_module
     bool validate_reset()
     {
         control.set_reset(true);
-        for (unsigned int channel_idx = 0; channel_idx < dut_mem_channel_count; channel_idx++)
-        {
-            dut.channels[channel_idx].bus_reset();
-        }
+
         control.set_program(false);
         control.set_enable(false);
 

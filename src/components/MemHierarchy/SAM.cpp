@@ -56,17 +56,6 @@ public:
         }
         else if (control->enable())
         {
-            // for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
-            // {
-            //     if(channels[channel_index].enabled())
-            //     {
-            //         for (unsigned int data_index = 0; data_index < width; data_index++)
-            //         {
-            //             write_channel_data[channel_index][data_index].write(channels[channel_index].channel_read_data_element(data_index));
-            //             channels[channel_index].channel_write_data_element(read_channel_data[channel_index][data_index].read(), data_index);
-            //         }
-            //     }
-            // }
         }
     }
 
@@ -101,7 +90,7 @@ public:
         : sc_module(name),
           mem("mem", _control, _channel_count, _length, _width, tf),
           generators("generator", _channel_count, AddressGeneratorCreator<DataType>(_control, tf)),
-          channels("mem_channels", _channel_count, MemoryChannelCreator<DataType>(_width, tf)),
+          channels("channels", _channel_count, MemoryChannelCreator<DataType>(_width, tf)),
           read_channel_data("read_channel_data", _channel_count, InDataPortCreator<DataType>(_width, tf)),
           write_channel_data("write_channel_data", _channel_count, OutDataPortCreator<DataType>(_width, tf)),
           length(_length),
