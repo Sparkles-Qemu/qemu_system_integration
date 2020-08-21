@@ -31,9 +31,9 @@ public:
     virtual const MemoryChannelMode& mode() = 0;
     virtual const sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& mem_read_data() = 0;
     virtual void mem_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
-    virtual const sc_vector<sc_signal<DataType>>& channel_read_data() = 0;
+    virtual const sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& channel_read_data() = 0;
     virtual const DataType& channel_read_data_element(unsigned int col) = 0;
-    virtual sc_vector<sc_signal<DataType>>& get_channel_read_data_bus() = 0;
+    virtual sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& get_channel_read_data_bus() = 0;
     virtual sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& get_channel_write_data_bus() = 0;
     virtual void channel_write_data(const sc_vector<sc_signal<DataType>>& _data) = 0;
     virtual void channel_write_data_element(DataType _data, unsigned int col) = 0;
@@ -45,7 +45,7 @@ public:
 template <typename DataType>
 struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
 {
-    sc_vector<sc_signal<DataType>> read_channel_data;
+    sc_vector<sc_signal<DataType, SC_MANY_WRITERS>> read_channel_data;
     sc_vector<sc_signal<DataType, SC_MANY_WRITERS>> write_channel_data;
     sc_signal<unsigned int> channel_addr;
     sc_signal<bool> channel_enabled;
@@ -91,7 +91,7 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         }
     }
 
-    const sc_vector<sc_signal<DataType>>& channel_read_data()
+    const sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& channel_read_data()
     {
         return read_channel_data;
     }
@@ -102,7 +102,7 @@ struct MemoryChannel : public sc_module, public MemoryChannel_IF<DataType>
         return read_channel_data.at(col);
     }
 
-    sc_vector<sc_signal<DataType>>& get_channel_read_data_bus()
+    sc_vector<sc_signal<DataType, SC_MANY_WRITERS>>& get_channel_read_data_bus()
     {
         return read_channel_data;
     }
