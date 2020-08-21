@@ -54,6 +54,9 @@ struct SAM_TB : public sc_module
         sc_start(1, SC_NS);
 
         control.set_reset(false);
+
+        sc_start(1, SC_NS);
+
         for (unsigned int idx = 0; idx < dut_mem_channel_count; idx++)
         {
             cout << "checking address generator[" << idx << "] " << endl;
@@ -121,7 +124,7 @@ struct SAM_TB : public sc_module
         control.set_program(false);
         control.set_enable(false);
 
-        sc_start(1, SC_NS);
+        sc_start(1.5, SC_NS);
 
         control.set_reset(false);
 
@@ -145,14 +148,17 @@ struct SAM_TB : public sc_module
         control.set_enable(true);
         control.set_program(false);
 
-        for (unsigned int i = 1; i <= 10; i++)
+        channel_0_write_bus[0] = DataType(1);
+        sc_start(1.5, SC_NS);
+
+        for (unsigned int i = 2; i <= 11; i++)
         {
             // dut.write_channel_data[0][0]->write(i);
             channel_0_write_bus[0] = DataType(i);
             sc_start(1, SC_NS);
 
         }
-        sc_start(1, SC_NS);
+        sc_start(10, SC_NS);
 
 
         cout << "validate_write_to_sam_1D SUCCESS" << endl;
@@ -170,6 +176,57 @@ struct SAM_TB : public sc_module
     bool validate_read_from_sam_1D()
     {
         cout << "Validating validate_read_from_sam_1D" << endl;
+
+        control.set_reset(true);
+        control.set_program(false);
+        control.set_enable(false);
+
+        sc_start(1, SC_NS);
+
+        control.set_reset(false);
+
+        Descriptor_2D generate_1D_descriptor_1(1, 10, DescriptorState::GENERATE, 10,
+                                               1, 0, 0);
+
+        Descriptor_2D suspend_descriptor(1, 0, DescriptorState::SUSPENDED, 0, 0, 0,
+                                         0);
+
+        vector<Descriptor_2D> temp_program;
+        temp_program.push_back(generate_1D_descriptor_1);
+        temp_program.push_back(suspend_descriptor);
+
+        dut.generators[1].loadProgram(temp_program);
+        dut.channels[0].set_mode(MemoryChannelMode::WRITE);
+        dut.channels[1].set_mode(MemoryChannelMode::READ);
+
+
+        unsigned int index = 0;
+        for (unsigned int row = 0; row < dut_mem_length; row++)
+        {
+            for (unsigned int col = 0; col < dut_mem_width; col++)
+            {
+                dut.mem.ram[row][col] = index++;
+            }
+        }
+        sc_start(1, SC_NS);
+        
+
+        control.set_program(true);
+        cout << "load program and start first descriptor" << endl;
+        sc_start(1, SC_NS);
+        control.set_enable(true);
+        control.set_program(false);
+        
+        sc_start(1.01, SC_NS);
+
+        for (unsigned int i = 0; i <= 10; i++)
+        {
+            std::cout << "@ " << sc_time_stamp() << " " << channel_1_read_bus[0] << std::endl;
+
+            sc_start(1, SC_NS);
+        }
+        sc_start(10, SC_NS);
+
 
         cout << "validate_read_from_sam_1D SUCCESS" << endl;
         return true;
@@ -211,6 +268,11 @@ struct SAM_TB : public sc_module
         {
             cout << "validate_write_to_sam_1D() FAILED!" << endl;
             return false;
+        }
+        if(!(validate_read_from_sam_1D()))
+        {
+            cout << "validate_read_from_sam_1D() FAILED!" << endl;
+            return -1;
         }
 
         cout << "Reset Success" << endl;

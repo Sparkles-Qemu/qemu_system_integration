@@ -90,6 +90,7 @@ struct AddressGenerator : public sc_module
     // Control Signals
 private:
     sc_in_clk _clk;
+    sc_in<bool> _reset;
 
 public:
     sc_port<GlobalControlChannel_IF> control;
@@ -178,7 +179,6 @@ public:
 
     void update()
     {
-
         if (control->reset())
         {
             resetProgramMemory();
@@ -197,10 +197,8 @@ public:
             channel->set_addr(descriptors.at(0).start);
             programmed = true;
             first_cycle = true;
-            if(descriptors.at(0).state == DescriptorState::GENERATE)
-            {
-                channel->set_enable(true);
-            }
+            std::cout << "@ " << sc_time_stamp() << " " << this->name()
+                << ":MODULE has been programmed" << std::endl;
         }
         else if (control->enable() && programmed)
         {
@@ -221,26 +219,54 @@ public:
             
 
             // update external signals NOTE SEE HACK WITH CHANNEL->SET_ADDR
-            switch (currentDescriptor().state)
+            if(!descriptorComplete())
             {
-            case DescriptorState::GENERATE:
+                switch (currentDescriptor().state)
+                {
+                case DescriptorState::GENERATE:
+                {
+                    channel->set_enable(true);
+                    break;
+                }
+                case DescriptorState::WAIT:
+                case DescriptorState::SUSPENDED:
+                {
+                    channel->set_enable(false);
+                    break;
+                }
+                default:
+                {
+                    std::cout << "@ " << sc_time_stamp() << " " << this->name()
+                            << ": Is in an invalid state! ... exitting" << std::endl;
+                    exit(-1);
+                }
+                }
+            }
+            else
             {
-                channel->set_enable(true);
-                break;
+                switch (nextDescriptor().state)
+                {
+                case DescriptorState::GENERATE:
+                {
+                    channel->set_enable(true);
+                    break;
+                }
+                case DescriptorState::WAIT:
+                case DescriptorState::SUSPENDED:
+                {
+                    channel->set_enable(false);
+                    break;
+                }
+                default:
+                {
+                    std::cout << "@ " << sc_time_stamp() << " " << this->name()
+                            << ": Is in an invalid state! ... exitting" << std::endl;
+                    exit(-1);
+                }
+                }
             }
-            case DescriptorState::WAIT:
-            case DescriptorState::SUSPENDED:
-            {
-                channel->set_enable(false);
-                break;
-            }
-            default:
-            {
-                std::cout << "@ " << sc_time_stamp() << " " << this->name()
-                          << ": Is in an invalid state! ... exitting" << std::endl;
-                exit(-1);
-            }
-            }
+            
+
         }
     }
 
@@ -255,6 +281,7 @@ public:
     {
         control(_control);
         _clk(control->clk());
+        _reset(control->reset());
         execute_index = 0;
         // sc_trace(tf, this->execute_index, (this->execute_index.name()));
         sc_trace(tf, this->execute_index, (this->execute_index.name()));
@@ -264,7 +291,7 @@ public:
 
         SC_METHOD(update);
         sensitive << _clk.pos();
-        sensitive << control->reset();
+        sensitive << _reset.pos();
 
         // connect signals
         std::cout << "ADDRESS_GENERATOR MODULE: " << name

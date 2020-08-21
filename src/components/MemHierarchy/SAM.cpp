@@ -28,10 +28,10 @@ struct SAMDataPortCreator
 };
 
 template <typename DataType>
-using InDataPortCreator = SAMDataPortCreator<sc_out<DataType>>;
+using OutDataPortCreator = SAMDataPortCreator<sc_out<DataType>>;
 
 template <typename DataType>
-using OutDataPortCreator = SAMDataPortCreator<sc_in<DataType>>;
+using InDataPortCreator = SAMDataPortCreator<sc_in<DataType>>;
 
 template <typename DataType>
 struct SAM : public sc_module
@@ -65,12 +65,9 @@ public:
         {
             for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
             {
-                if(channels[channel_index].enabled())
+                for (unsigned int bus_index = 0; bus_index < width; bus_index++)
                 {
-                    for (unsigned int bus_index = 0; bus_index < width; bus_index++)
-                    {
-                        channels[channel_index].channel_write_data_element(write_channel_data[channel_index][bus_index].read(), bus_index); 
-                    }
+                    channels[channel_index].channel_write_data_element(write_channel_data[channel_index][bus_index].read(), bus_index);
                 }
             }
         }
@@ -80,6 +77,13 @@ public:
     {
         if (control->enable())
         {
+            for (unsigned int channel_index = 0; channel_index < channel_count; channel_index++)
+            {
+                for (unsigned int bus_index = 0; bus_index < width; bus_index++)
+                {
+                    read_channel_data[channel_index][bus_index] = channels[channel_index].get_channel_read_data_bus()[bus_index];
+                }
+            }
         }
     }
 
@@ -91,14 +95,15 @@ public:
           mem("mem", _control, _channel_count, _length, _width, tf),
           generators("generator", _channel_count, AddressGeneratorCreator<DataType>(_control, tf)),
           channels("channels", _channel_count, MemoryChannelCreator<DataType>(_width, tf)),
-          read_channel_data("read_channel_data", _channel_count, InDataPortCreator<DataType>(_width, tf)),
-          write_channel_data("write_channel_data", _channel_count, OutDataPortCreator<DataType>(_width, tf)),
+          read_channel_data("read_channel_data", _channel_count, OutDataPortCreator<DataType>(_width, tf)),
+          write_channel_data("write_channel_data", _channel_count, InDataPortCreator<DataType>(_width, tf)),
           length(_length),
           width(_width),
           channel_count(_channel_count)
     {
         control(_control);
         _clk(control->clk());
+
         SC_METHOD(update);
         sensitive << _clk.pos();
         sensitive << control->reset();
@@ -121,6 +126,7 @@ public:
             for (unsigned int data_index = 0; data_index < width; data_index++)
             {
                 sensitive << channels[channel_index].get_channel_read_data_bus()[data_index];
+                sc_trace(tf, read_channel_data[channel_index][data_index], read_channel_data[channel_index][data_index].name());
             }
         }
 
