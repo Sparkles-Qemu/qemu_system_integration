@@ -280,7 +280,6 @@ struct AddressGenerator_TB : public sc_module
 
     bool validate_generation_2D()
     {
-
         cout << "Validating verify_generation_2D" << endl;
         control.set_enable(false);
         control.set_reset(true);
@@ -343,7 +342,6 @@ struct AddressGenerator_TB : public sc_module
                 sc_start(1, SC_NS);
             }
             index += 5;
-            
         }
 
         cout << "validate success!" << endl;

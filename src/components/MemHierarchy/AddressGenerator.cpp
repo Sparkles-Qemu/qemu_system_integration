@@ -152,10 +152,6 @@ public:
                 x_count_remaining = currentDescriptor().x_count;
                 y_count_remaining = y_count_remaining - 1;
             }
-            else
-            {
-                /* DO NOTHING, NEED TO EXECUTE NEXT DESCRIPTOR */
-            }
         }
         else
         {
@@ -244,6 +240,7 @@ public:
             }
             else
             {
+                // pre enable for next descriptors first cycle
                 switch (nextDescriptor().state)
                 {
                 case DescriptorState::GENERATE:
