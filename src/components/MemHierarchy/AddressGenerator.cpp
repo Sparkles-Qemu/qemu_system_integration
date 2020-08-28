@@ -213,7 +213,6 @@ public:
                 first_cycle = false;
             }
             
-
             // update external signals NOTE SEE HACK WITH CHANNEL->SET_ADDR
             if(!descriptorComplete())
             {

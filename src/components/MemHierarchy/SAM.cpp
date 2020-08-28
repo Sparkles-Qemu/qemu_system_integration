@@ -1,14 +1,13 @@
 #ifndef SAM_CPP
 #define SAM_CPP
 
-#include "sysc/communication/sc_signal_ports.h"
 #include <AddressGenerator.cpp>
 #include <GlobalControl.cpp>
-#include <Memory.cpp>
 #include <assert.h>
 #include <iostream>
 #include <string>
 #include <systemc.h>
+#include <Connector.cpp>
 
 using std::cout;
 using std::endl;

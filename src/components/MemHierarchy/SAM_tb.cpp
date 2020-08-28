@@ -1,11 +1,16 @@
 #include "AddressGenerator.cpp"
 #include "SAM.cpp"
 #include "sysc/kernel/sc_time.h"
+#include <map>
 #include <systemc.h>
+#include <memory>
 
 // #define DEBUG
 using std::cout;
 using std::endl;
+using std::map;
+using std::unique_ptr;
+
 template <typename DataType>
 struct SAM_TB : public sc_module
 {
@@ -399,10 +404,10 @@ struct SAM_TB : public sc_module
                                                   0, 0, 0);
 
         Descriptor_2D generator_1_read_1D_descriptor_1(2, 10, DescriptorState::GENERATE, 10,
-                                                     1, 0, 0);
+                                                       1, 0, 0);
 
         Descriptor_2D generator_1_read_1D_descriptor_2(3, 100, DescriptorState::GENERATE, 5,
-                                                     2, 0, 0);
+                                                       2, 0, 0);
 
         Descriptor_2D generator_1_read_suspend_descriptor(3, 0, DescriptorState::SUSPENDED, 0, 0, 0,
                                                           0);
@@ -443,7 +448,6 @@ struct SAM_TB : public sc_module
         }
 
         sc_start(20, SC_NS);
-
 
         cout << "validate_concurrent_read_write_1D_ASAP SUCCESS" << endl;
         return true;
@@ -521,10 +525,6 @@ struct SAM_TB : public sc_module
 int sc_main(int argc, char* argv[])
 {
     SAM_TB<sc_int<32>> tb("SAM_tb");
-
-
-
-
 
     return tb.run_tb();
 }
