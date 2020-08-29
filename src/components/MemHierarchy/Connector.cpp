@@ -58,6 +58,27 @@ struct Connection : public sc_module
         }
         std::cout << "CONNECTION " << name << " instantiated and resolved to many-to-many connection" << std::endl;
     }
+
+    void one_to_one_bind(sc_in<DataType>& target)
+    {
+        target.bind(signals[0]);
+    }
+
+    void one_to_many_bind(sc_vector<sc_in<DataType>>& targets)
+    {
+        for (auto& target : targets)
+        {
+            target.bind(signals[0]);
+        }
+    }
+
+    void many_to_many_bind(sc_vector<sc_in<DataType>>& targets)
+    {
+        for (unsigned int idx = 0; idx < targets.size(); idx++)
+        {
+            targets[idx].bind(signals[idx]);
+        }
+    }
 };
 
 struct Connector : public sc_module
@@ -77,8 +98,8 @@ struct Connector : public sc_module
         auto old_connection = connection_tracker.find((string)name);
         if (old_connection != connection_tracker.end())
         {
-            auto connection = static_cast<Connection<DataType>*>(old_connection->second.get());
-            in.bind(connection->signals[0]);
+            auto downcast_connection = static_cast<Connection<DataType>*>(old_connection->second.get());
+            downcast_connection->one_to_one_bind(in);
         }
         else
         {
@@ -92,11 +113,8 @@ struct Connector : public sc_module
         auto old_connection = connection_tracker.find((string)name);
         if (old_connection != connection_tracker.end())
         {
-            auto connection = static_cast<Connection<DataType>*>(old_connection->second.get());
-            for (unsigned int idx = 0; idx < in.size(); idx++)
-            {
-                in[idx].bind(connection->signals[0]);
-            }
+            auto downcast_connection = static_cast<Connection<DataType>*>(old_connection->second.get());
+            downcast_connection->one_to_many_bind(in);
         }
         else
         {
@@ -110,11 +128,8 @@ struct Connector : public sc_module
         auto old_connection = connection_tracker.find((string)name);
         if (old_connection != connection_tracker.end())
         {
-            auto connection = static_cast<Connection<DataType>*>(old_connection->second.get());
-            for (unsigned int idx = 0; idx < in.size(); idx++)
-            {
-                in[idx].bind(connection->signals[idx]);
-            }
+            auto downcast_connection = static_cast<Connection<DataType>*>(old_connection->second.get());
+            downcast_connection->many_to_many_bind(in);
         }
         else
         {
