@@ -22,19 +22,19 @@ struct Connection_Base : public sc_module
 };
 
 template <typename DataType>
-struct Connection : public Connection_Base
+struct Connection : public sc_module
 {
     sc_vector<sc_signal<DataType>> signals;
-    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_in<DataType>& in) : Connection_Base(name),
+    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_in<DataType>& in) : sc_module(name),
                                                                                                       signals("signal", 1)
     {
         out.bind(signals[0]);
         in.bind(signals[0]);
         sc_trace(_tf, signals[0], signals[0].name());
-        std::cout << "BASE CONNECTION " << name << " resolved to one-to-one connection" << std::endl;
+        std::cout << "CONNECTION " << name << " instantiated and resolved to one-to-one connection" << std::endl;
     }
 
-    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_vector<sc_in<DataType>>& in) : Connection_Base(name),
+    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_vector<sc_in<DataType>>& in) : sc_module(name),
                                                                                                                  signals("signal", 1)
     {
         out.bind(signals[0]);
@@ -43,10 +43,10 @@ struct Connection : public Connection_Base
             in[idx].bind(signals[0]);
         }
         sc_trace(_tf, signals[0], signals[0].name());
-        std::cout << "BASE CONNECTION  " << name << " resolved to one-to-many connection" << std::endl;
+        std::cout << "CONNECTION  " << name << " instantiated and resolved to one-to-many connection" << std::endl;
     }
 
-    Connection(sc_module_name name, sc_trace_file* _tf, sc_vector<sc_out<DataType>>& out, sc_vector<sc_in<DataType>>& in) : Connection_Base(name),
+    Connection(sc_module_name name, sc_trace_file* _tf, sc_vector<sc_out<DataType>>& out, sc_vector<sc_in<DataType>>& in) : sc_module(name),
                                                                                                                             signals("signal", in.size())
     {
         assert(out.size() == in.size());
@@ -56,7 +56,7 @@ struct Connection : public Connection_Base
             out[idx].bind(signals[idx]);
             sc_trace(_tf, signals[idx], signals[idx].name());
         }
-        std::cout << "BASE CONNECTION " << name << " resolved to many-to-many connection" << std::endl;
+        std::cout << "CONNECTION " << name << " instantiated and resolved to many-to-many connection" << std::endl;
     }
 };
 
@@ -64,9 +64,9 @@ struct Connector : public sc_module
 {
     //Constructor for module. This module is pos edge trigger
     sc_trace_file* tf;
-    map<string, unique_ptr<Connection_Base>> connection_tracker;
+    map<string, unique_ptr<sc_module>> connection_tracker;
 
-    Connector(sc_module_name name, sc_trace_file* _tf) : tf(_tf)
+    Connector(sc_module_name name, sc_trace_file* _tf) : sc_module(name), tf(_tf)
     {
         std::cout << "CONNECTOR  " << name << " instantiated " << std::endl;
     }

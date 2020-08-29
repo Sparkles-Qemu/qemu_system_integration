@@ -40,7 +40,7 @@ struct DUMMY_MODULE : public sc_module
     DUMMY_MODULE(
         sc_module_name name, sc_trace_file* tf) : sc_module(name), connector((string(name) + "_connector").c_str(), tf)
     {
-        connector.add((string(name) + "_SIGNAL").c_str(), sub_out.dummy_sub_module_out, sub_in.dummy_sub_module_in);
+        connector.add((string(name) + "_connection").c_str(), sub_out.dummy_sub_module_out, sub_in.dummy_sub_module_in);
         cout << "DUMMY_MODULE MODULE: " << name << " has been instantiated " << endl;
     }
 };
@@ -56,7 +56,7 @@ struct Connector_TB : public sc_module
     DUMMY_MODULE<DataType> module1{"dummy_module_1", tf};
     DUMMY_MODULE<DataType> module2{"dummy_module_2", tf};
 
-    Connector connector{"connector", tf};
+    Connector connector{"testbench_connector", tf};
 
     sc_out<DataType> one_to_one_port_out{"one_to_one_port_out"};
     sc_in<DataType> one_to_one_port_in{"one_to_one_port_in"};
