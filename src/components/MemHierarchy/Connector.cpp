@@ -13,27 +13,28 @@ using std::map;
 using std::string;
 using std::unique_ptr;
 
-struct Connection_Base
+struct Connection_Base : public sc_module
 {
-    Connection_Base()
+    Connection_Base(sc_module_name name) : sc_module(name)
     {
+        std::cout << "BASE CONNECTION " << name << " instantiated " << std::endl;
     }
 };
 
 template <typename DataType>
-struct Connection : public sc_module, public Connection_Base
+struct Connection : public Connection_Base
 {
     sc_vector<sc_signal<DataType>> signals;
-    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_in<DataType>& in) : sc_module(name),
+    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_in<DataType>& in) : Connection_Base(name),
                                                                                                       signals("signal", 1)
     {
         out.bind(signals[0]);
         in.bind(signals[0]);
         sc_trace(_tf, signals[0], signals[0].name());
-        std::cout << "ONE-TO-ONE CONNECTION  " << name << " instantiated " << std::endl;
+        std::cout << "BASE CONNECTION " << name << " resolved to one-to-one connection" << std::endl;
     }
 
-    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_vector<sc_in<DataType>>& in) : sc_module(name),
+    Connection(sc_module_name name, sc_trace_file* _tf, sc_out<DataType>& out, sc_vector<sc_in<DataType>>& in) : Connection_Base(name),
                                                                                                                  signals("signal", 1)
     {
         out.bind(signals[0]);
@@ -42,10 +43,10 @@ struct Connection : public sc_module, public Connection_Base
             in[idx].bind(signals[0]);
         }
         sc_trace(_tf, signals[0], signals[0].name());
-        std::cout << "ONE-TO-MANY CONNECTION  " << name << " instantiated " << std::endl;
+        std::cout << "BASE CONNECTION  " << name << " resolved to one-to-many connection" << std::endl;
     }
 
-    Connection(sc_module_name name, sc_trace_file* _tf, sc_vector<sc_out<DataType>>& out, sc_vector<sc_in<DataType>>& in) : sc_module(name),
+    Connection(sc_module_name name, sc_trace_file* _tf, sc_vector<sc_out<DataType>>& out, sc_vector<sc_in<DataType>>& in) : Connection_Base(name),
                                                                                                                             signals("signal", in.size())
     {
         assert(out.size() == in.size());
@@ -55,7 +56,7 @@ struct Connection : public sc_module, public Connection_Base
             out[idx].bind(signals[idx]);
             sc_trace(_tf, signals[idx], signals[idx].name());
         }
-        std::cout << "MANY-TO-MANY CONNECTION  " << name << " instantiated " << std::endl;
+        std::cout << "BASE CONNECTION " << name << " resolved to many-to-many connection" << std::endl;
     }
 };
 
@@ -77,7 +78,6 @@ struct Connector : public sc_module
         if (old_connection != connection_tracker.end())
         {
             auto connection = static_cast<Connection<DataType>*>(old_connection->second.get());
-            out.bind(connection->signals[0]);
             in.bind(connection->signals[0]);
         }
         else
@@ -93,7 +93,6 @@ struct Connector : public sc_module
         if (old_connection != connection_tracker.end())
         {
             auto connection = static_cast<Connection<DataType>*>(old_connection->second.get());
-            out.bind(connection->signals[0]);
             for (unsigned int idx = 0; idx < in.size(); idx++)
             {
                 in[idx].bind(connection->signals[0]);
@@ -115,7 +114,6 @@ struct Connector : public sc_module
             for (unsigned int idx = 0; idx < in.size(); idx++)
             {
                 in[idx].bind(connection->signals[idx]);
-                out[idx].bind(connection->signals[idx]);
             }
         }
         else
