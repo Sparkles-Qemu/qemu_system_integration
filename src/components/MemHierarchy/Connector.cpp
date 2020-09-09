@@ -222,6 +222,26 @@ struct Connector : public sc_module
         }
     }
 
+    /**
+     * @brief adds a one to many connection between one port and a vector of
+     * ports of type DataType references of type. The connection is given a name
+     * and it's type is inferred from the template argument DataType of the
+     * ports. The function checks if an older connection exists that can be
+     * rebound to a new target vector of input ports of type DataType. Note that
+     * this function makes no assumption about the current binding of the passed
+     * output port reference in cases of rebinding. If the name of the output
+     * port that was bound to the the old connection differs from the one passed
+     * to this function, a warning is printed and binding occurs normally. If
+     * the old connection is of a different type than the passed ports then an
+     * assertion failure occurs and the program terminates. If no old connection
+     * exists under passed name a new one is instantiated and saved in the
+     * connection tracker as well as the output port it is currently bound to. 
+     *
+     * @tparam DataType 
+     * @param name 
+     * @param out 
+     * @param in 
+     */
     template <typename DataType>
     void add(sc_module_name name, sc_out<DataType>& out, sc_vector<sc_in<DataType>>& in)
     {
@@ -247,6 +267,27 @@ struct Connector : public sc_module
         }
     }
 
+
+    /**
+     * @brief adds a many to many connection between two vector of
+     * ports of type DataType. The connection is given a name
+     * and it's type is inferred from the template argument DataType of the
+     * ports. The function checks if an older connection exists that can be
+     * rebound to a new target vector of input ports of type DataType. Note that
+     * this function makes no assumption about the current binding of the passed
+     * output port reference in cases of rebinding. If the name of the output
+     * port that was bound to the the old connection differs from the one passed
+     * to this function, a warning is printed and binding occurs normally. If
+     * the old connection is of a different type than the passed ports then an
+     * assertion failure occurs and the program terminates. If no old connection
+     * exists under passed name a new one is instantiated and saved in the
+     * connection tracker as well as the output port it is currently bound to. 
+     *
+     * @tparam DataType 
+     * @param name 
+     * @param out 
+     * @param in 
+     */
     template <typename DataType>
     void add(sc_module_name name, sc_vector<sc_out<DataType>>& out, sc_vector<sc_in<DataType>>& in)
     {
