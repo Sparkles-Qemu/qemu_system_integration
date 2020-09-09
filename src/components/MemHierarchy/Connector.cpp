@@ -30,6 +30,7 @@ struct Connection : public sc_module
      * argument defined upon instantiation of connection objection. 
      */
     sc_vector<sc_signal<DataType>> signals;
+    string output_port_name;
 
     /**
      * @brief Construct a named Connection object to be used in a one to one
@@ -49,6 +50,7 @@ struct Connection : public sc_module
         out.bind(signals[0]);
         in.bind(signals[0]);
         sc_trace(_tf, signals[0], signals[0].name());
+        output_port_name = out.name();
         std::cout << "CONNECTION " << name << " instantiated and resolved to one-to-one connection" << std::endl;
     }
 
@@ -73,6 +75,7 @@ struct Connection : public sc_module
         {
             in[idx].bind(signals[0]);
         }
+        output_port_name = out.name();
         sc_trace(_tf, signals[0], signals[0].name());
         std::cout << "CONNECTION  " << name << " instantiated and resolved to one-to-many connection" << std::endl;
     }
@@ -103,6 +106,7 @@ struct Connection : public sc_module
             out[idx].bind(signals[idx]);
             sc_trace(_tf, signals[idx], signals[idx].name());
         }
+        output_port_name = out.name();
         std::cout << "CONNECTION " << name << " instantiated and resolved to many-to-many connection" << std::endl;
     }
 
@@ -166,7 +170,7 @@ struct Connector : public sc_module
     //Constructor for module. This module is pos edge trigger
     sc_trace_file* tf;
     map<string, unique_ptr<sc_module>> connection_tracker;
-    map<string, string> output_port_tracker;
+    // map<string, string> output_port_tracker;
 
     Connector(sc_module_name name, sc_trace_file* _tf) : sc_module(name), tf(_tf)
     {
@@ -174,12 +178,19 @@ struct Connector : public sc_module
     }
 
     /**
-     * @brief adds a one to one connection between two ports references of type DataType, one output and one
-     * input. The connection is given a name and it's type is inferred from the
-     * template argument DataType of the ports. The function checks if an older
-     * connection exists that can be rebound to a new target input port with the
-     * assumption that the target output port already bound to the connection is
-     * the same one passed to this function. 
+     * @brief adds a one to one connection between two ports references of type
+     * DataType, one output and one input. The connection is given a name and
+     * it's type is inferred from the template argument DataType of the ports.
+     * The function checks if an older connection exists that can be rebound to
+     * a new target input port. Note that this function makes no assumption
+     * about the binding of the passed output port reference in cases of
+     * rebinding. If the name of the output port that was bound to the the old
+     * connection differs from the one passed to this function, a warning is
+     * printed and binding occurs normally. If the old connection is of a
+     * different type than the passed ports then an assertion failure occurs and
+     * the program terminates. If no old connection exists under passed name a
+     * new one is instantiated and saved in the connection tracker as well as
+     * the output port it is currently bound to. 
      * 
      * @tparam DataType 
      * @param name 
@@ -194,18 +205,20 @@ struct Connector : public sc_module
         {
             auto downcasted_connection = dynamic_cast<Connection<DataType>*>(old_connection->second.get());
             assert(downcasted_connection);
-            downcasted_connection->one_to_one_rebind_to(in);
-            if (output_port_tracker[(string)name] != (string)out.name())
+            if (out.name() != downcasted_connection->output_port_name)
             {
-                string error_msg = "Rebinding previously instantated connection that is not currently bound to the output port argument passed named : ";
+                string error_msg = "Rebinding previously instantated connection currently bound to output: ";
+                error_msg += downcasted_connection->output_port_name;
+                error_msg += "\n";
+                error_msg += "Connection is not bound to the output port passed named : ";
                 error_msg += (string)out.name();
                 SC_REPORT_WARNING("", error_msg.c_str());
             }
+            downcasted_connection->one_to_one_rebind_to(in);
         }
         else
         {
             connection_tracker[(string)name] = unique_ptr<Connection<DataType>>(new Connection<DataType>(name, tf, out, in));
-            output_port_tracker[(string)name] = (string)out.name();
         }
     }
 
@@ -217,17 +230,19 @@ struct Connector : public sc_module
         {
             auto downcasted_connection = dynamic_cast<Connection<DataType>*>(old_connection->second.get());
             assert(downcasted_connection);
-            downcasted_connection->one_to_many_rebind_to(in);
-            if (output_port_tracker[(string)name] != (string)out.name())
+            if (out.name() != downcasted_connection->output_port_name)
             {
-                string error_msg = "Rebinding previously instantated connection that is not currently bound to the output port argument passed named : ";
+                string error_msg = "Rebinding previously instantated connection currently bound to output: ";
+                error_msg += downcasted_connection->output_port_name;
+                error_msg += "\n";
+                error_msg += "Connection is not bound to the output port passed with name : ";
                 error_msg += (string)out.name();
                 SC_REPORT_WARNING("", error_msg.c_str());
             }
+            downcasted_connection->one_to_many_rebind_to(in);
         }
         else
         {
-            output_port_tracker[(string)name] = (string)out.name();
             connection_tracker[(string)name] = unique_ptr<Connection<DataType>>(new Connection<DataType>(name, tf, out, in));
         }
     }
@@ -240,17 +255,19 @@ struct Connector : public sc_module
         {
             auto downcasted_connection = dynamic_cast<Connection<DataType>*>(old_connection->second.get());
             assert(downcasted_connection);
-            downcasted_connection->many_to_many_rebind_to(in);
-            if(output_port_tracker[(string)name] != (string)out.name())
+            if (out.name() != downcasted_connection->output_port_name)
             {
-                string error_msg = "Rebinding previously instantated connection that is not currently bound to the output port argument passed named : ";
+                string error_msg = "Rebinding previously instantated connection currently bound to output: ";
+                error_msg += downcasted_connection->output_port_name;
+                error_msg += "\n";
+                error_msg += "Connection is not bound to the output port passed named : ";
                 error_msg += (string)out.name();
-                SC_REPORT_WARNING("", error_msg.c_str());                
+                SC_REPORT_WARNING("", error_msg.c_str());
             }
+            downcasted_connection->many_to_many_rebind_to(in);
         }
         else
         {
-            output_port_tracker[(string)name] = (string)out.name();
             connection_tracker[(string)name] = unique_ptr<Connection<DataType>>(new Connection<DataType>(name, tf, out, in));
         }
     }

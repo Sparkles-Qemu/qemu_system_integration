@@ -64,9 +64,11 @@ struct Connector_TB : public sc_module
 
     // error edge case testing, need to make this form of testing more formal
     // using exceptions or something
-    // sc_signal<DataType> one_to_one_port_out_other_binder{"one_to_one_port_out_other_binder"};
-    // sc_out<DataType> one_to_one_port_out_other{"one_to_one_port_out_other"};
-    // sc_in<DataType> one_to_one_port_in_reuse_other{"one_to_one_port_in_reuse_other"};
+    
+    sc_signal<DataType> one_to_one_port_out_other_binder{"one_to_one_port_out_other_binder"};
+    sc_out<DataType> one_to_one_port_out_other{"one_to_one_port_out_other"};
+    sc_in<DataType> one_to_one_port_in_reuse_other{"one_to_one_port_in_reuse_other"};
+    
     // sc_out<unsigned int> one_to_one_port_out_error{"one_to_one_port_out_error"};
     // sc_in<unsigned int> one_to_one_port_in_error{"one_to_one_port_in_error"};
 
@@ -83,8 +85,8 @@ struct Connector_TB : public sc_module
         connector.add("one_to_one", one_to_one_port_out, one_to_one_port_in);
         connector.add("one_to_one", one_to_one_port_out, one_to_one_port_in_reuse);
 
-        // one_to_one_port_out_other.bind(one_to_one_port_out_other_binder);
-        // connector.add("one_to_one", one_to_one_port_out_other, one_to_one_port_in_reuse_other);
+        one_to_one_port_out_other.bind(one_to_one_port_out_other_binder);
+        connector.add("one_to_one", one_to_one_port_out_other, one_to_one_port_in_reuse_other);
         
         // illegal connection reuse to wrong type caught by System C elaboration 
         // connector.add("one_to_one", one_to_one_port_out_error, one_to_one_port_in_error);
