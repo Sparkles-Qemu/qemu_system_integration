@@ -50,6 +50,11 @@
         "string": "cpp",
         "string_view": "cpp",
         "*.inc": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "chrono": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "ratio": "cpp",
+        "thread": "cpp"
     }
 }

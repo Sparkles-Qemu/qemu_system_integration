@@ -14,7 +14,7 @@
             "environment": [
                 {
                 "name": "LD_LIBRARY_PATH",
-                "value": "/usr/local/systemc-2.3.3/lib-linux64"
+                "value": "/usr/local/systemc-2.3.3/lib"
                 }
             ],
             "cwd": "${workspaceFolder}",
@@ -27,11 +27,6 @@
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "systemc libs",
-                    "text": "set env LD_LIBRARY_PATH=/usr/local/systemc-2.3.3/lib-linux64",
                     "ignoreFailures": true
                 }
             ]
