@@ -123,14 +123,14 @@ public:
                 std::vector<std::vector<int>> slice(3, std::vector<int>(3, -1));
                 for(int filter = 0; filter < 3; filter++)
                 {
-                    for(int ifmapIdx = 0; ifmapIdx <= (79+20+200); ifmapIdx++)
+                    for(int ifmapIdx = 0; ifmapIdx <= /*numbers sent to each input*/80+/*max of startup delay for all inputs*/3*8; ifmapIdx++)
                     {
                         cout << "ifmapIdx: " << ifmapIdx << endl;
                         for (int chIdx = 0; chIdx < 3; chIdx++)
                         {
                             for (int grpIdx = 0; grpIdx < 3; grpIdx++)
                             {
-                                if (ifmapIdx >= (chIdx * 9 + grpIdx*3) && ifmapIdx <= (79+grpIdx * 10 + chIdx * 100))
+                                if (ifmapIdx >= (chIdx * 9 + grpIdx*3))
                                 {
                                     int grp_ifmap_idx = (ifmapIdx - (chIdx * 9 + grpIdx*3)) + grpIdx * 10 + chIdx * 100;
                                     pe_group_sig[chIdx * 3 + grpIdx].write(ifmap[grp_ifmap_idx]);
