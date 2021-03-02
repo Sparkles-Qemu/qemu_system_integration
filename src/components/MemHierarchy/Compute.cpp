@@ -112,7 +112,6 @@ public:
     void update()
     {
         std::vector<DataType> ifmap(300);
-        std::vector<int> ifmap_idx(9, 0);
         for (int val = 0; val < 300; val++)
         {
             ifmap[val] = val + 1;
@@ -122,29 +121,32 @@ public:
             if (control->enable())
             {
                 std::vector<std::vector<int>> slice(3, std::vector<int>(3, -1));
-                cout << "TimeVal: " << timeval << endl;
-                cout << "ifmap idx slice " << timeval << endl;
-                for (int chIdx = 0; chIdx < 3; chIdx++)
+                for(int ifmapIdx = 0;; ifmapIdx++)
                 {
-                    for (int grpIdx = 0; grpIdx < 3; grpIdx++)
+                    cout << "ifmapIdx: " << ifmapIdx << endl;
+                    for (int chIdx = 0; chIdx < 3; chIdx++)
                     {
-                        if (timeval >= (chIdx * 3 + grpIdx) * 3)
+                        for (int grpIdx = 0; grpIdx < 3; grpIdx++)
                         {
-                            int grp_ifmap_idx = ifmap_idx[(chIdx * 3 + grpIdx)]++;
-                            pe_group_sig[chIdx * 3 + grpIdx].write(ifmap[grp_ifmap_idx + grpIdx * 10 + chIdx * 100]);
-                            slice[chIdx][grpIdx] = grp_ifmap_idx + grpIdx * 10 + chIdx * 100;
+                            if (ifmapIdx >= (chIdx * 9 + grpIdx*3) && ifmapIdx <= (79+grpIdx * 10 + chIdx * 100))
+                            {
+                                int grp_ifmap_idx = (ifmapIdx - (chIdx * 9 + grpIdx*3)) + grpIdx * 10 + chIdx * 100;
+                                pe_group_sig[chIdx * 3 + grpIdx].write(ifmap[grp_ifmap_idx]);
+                                slice[chIdx][grpIdx] = grp_ifmap_idx;
+                            }
                         }
                     }
-                }
-                for (auto& row : slice)
-                {
-                    for (auto& col : row)
+                    for (auto& row : slice)
                     {
-                        cout << col << ", ";
+                        for (auto& col : row)
+                        {
+                            cout << col << ", ";
+                        }
+                        cout << endl;
                     }
-                    cout << endl;
+                    wait();
                 }
-                timeval++;
+                // timeval++;
             }
             wait();
         }
@@ -239,12 +241,14 @@ struct ComputeBlob_TB : public sc_module
         for (int k = 0; expected_output_index < 64; ++k)
         {
             sc_start(1, SC_NS);
+            cout << "psumout " << dut.blob.psum_out.read() << endl;
             if (!startValidation && DataType(expected_output[0]) == dut.blob.psum_out.read())
             {
                 startValidation = true;
             }
             if (startValidation)
             {
+                cout << "Current expected output index: " << expected_output_index << endl;
                 if (validCounter > 0)
                 {
                     std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
@@ -285,7 +289,7 @@ struct ComputeBlob_TB : public sc_module
         }
         else
         {
-            cout << "injection SUCCESS" << endl;
+            cout << "injection FAILED" << endl;
             return false;
         }
     }
