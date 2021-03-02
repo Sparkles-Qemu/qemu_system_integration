@@ -121,30 +121,33 @@ public:
             if (control->enable())
             {
                 std::vector<std::vector<int>> slice(3, std::vector<int>(3, -1));
-                for(int ifmapIdx = 0;; ifmapIdx++)
+                for(int filter = 0; filter < 3; filter++)
                 {
-                    cout << "ifmapIdx: " << ifmapIdx << endl;
-                    for (int chIdx = 0; chIdx < 3; chIdx++)
+                    for(int ifmapIdx = 0; ifmapIdx <= (79+20+200); ifmapIdx++)
                     {
-                        for (int grpIdx = 0; grpIdx < 3; grpIdx++)
+                        cout << "ifmapIdx: " << ifmapIdx << endl;
+                        for (int chIdx = 0; chIdx < 3; chIdx++)
                         {
-                            if (ifmapIdx >= (chIdx * 9 + grpIdx*3) && ifmapIdx <= (79+grpIdx * 10 + chIdx * 100))
+                            for (int grpIdx = 0; grpIdx < 3; grpIdx++)
                             {
-                                int grp_ifmap_idx = (ifmapIdx - (chIdx * 9 + grpIdx*3)) + grpIdx * 10 + chIdx * 100;
-                                pe_group_sig[chIdx * 3 + grpIdx].write(ifmap[grp_ifmap_idx]);
-                                slice[chIdx][grpIdx] = grp_ifmap_idx;
+                                if (ifmapIdx >= (chIdx * 9 + grpIdx*3) && ifmapIdx <= (79+grpIdx * 10 + chIdx * 100))
+                                {
+                                    int grp_ifmap_idx = (ifmapIdx - (chIdx * 9 + grpIdx*3)) + grpIdx * 10 + chIdx * 100;
+                                    pe_group_sig[chIdx * 3 + grpIdx].write(ifmap[grp_ifmap_idx]);
+                                    slice[chIdx][grpIdx] = grp_ifmap_idx;
+                                }
                             }
                         }
-                    }
-                    for (auto& row : slice)
-                    {
-                        for (auto& col : row)
+                        for (auto& row : slice)
                         {
-                            cout << col << ", ";
+                            for (auto& col : row)
+                            {
+                                cout << col << ", ";
+                            }
+                            cout << endl;
                         }
-                        cout << endl;
+                        wait();
                     }
-                    wait();
                 }
                 // timeval++;
             }
@@ -234,64 +237,78 @@ struct ComputeBlob_TB : public sc_module
         cout << "Validating injection" << endl;
         control.set_enable(true);
         float expected_output[64] = {15678, 15813, 15948, 16083, 16218, 16353, 16488, 16623, 17028, 17163, 17298, 17433, 17568, 17703, 17838, 17973, 18378, 18513, 18648, 18783, 18918, 19053, 19188, 19323, 19728, 19863, 19998, 20133, 20268, 20403, 20538, 20673, 21078, 21213, 21348, 21483, 21618, 21753, 21888, 22023, 22428, 22563, 22698, 22833, 22968, 23103, 23238, 23373, 23778, 23913, 24048, 24183, 24318, 24453, 24588, 24723, 25128, 25263, 25398, 25533, 25668, 25803, 25938, 26073};
-        bool startValidation = false;
-        int expected_output_index = 0;
-        int validCounter = 8;
-        int invalidCounter = 1;
-        for (int k = 0; expected_output_index < 64; ++k)
+        int success_count = 0;
+        for(int filter = 0; filter < 3; filter++)
         {
-            sc_start(1, SC_NS);
-            cout << "psumout " << dut.blob.psum_out.read() << endl;
-            if (!startValidation && DataType(expected_output[0]) == dut.blob.psum_out.read())
+            bool startValidation = false;
+            int expected_output_index = 0;
+            int validCounter = 8;
+            int invalidCounter = 1;
+            for (int k = 0; expected_output_index < 64; ++k)
             {
-                startValidation = true;
-            }
-            if (startValidation)
-            {
-                cout << "Current expected output index: " << expected_output_index << endl;
-                if (validCounter > 0)
+                sc_start(1, SC_NS);
+                cout << "psumout " << dut.blob.psum_out.read() << endl;
+                if (!startValidation && DataType(expected_output[0]) == dut.blob.psum_out.read())
                 {
-                    std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
-                              << " expected_output: " << expected_output[expected_output_index];
-
-                    if (DataType(expected_output[expected_output_index]) == dut.blob.psum_out.read())
+                    startValidation = true;
+                }
+                if (startValidation)
+                {
+                    cout << "Current expected output index: " << expected_output_index << endl;
+                    if (validCounter > 0)
                     {
-                        std::cout << " ....assertion succuss!!" << std::endl;
-                        expected_output_index++;
+                        std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
+                                << " expected_output: " << expected_output[expected_output_index];
+
+                        if (DataType(expected_output[expected_output_index]) == dut.blob.psum_out.read())
+                        {
+                            std::cout << " ....assertion succuss!!" << std::endl;
+                            expected_output_index++;
+                        }
+                        else
+                        {
+                            std::cout << " ....assertion failure, terminating....!!" << std::endl;
+                            break;
+                        }
+                        validCounter--;
+                    }
+                    else if (invalidCounter > 0)
+                    {
+                        std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
+                                << " ....ignoring invalid output " << std::endl;
+                        invalidCounter--;
                     }
                     else
                     {
-                        std::cout << " ....assertion failure, terminating....!!" << std::endl;
-                        break;
+                        std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
+                                << " ....ignoring invalid output " << std::endl;
+                        validCounter = 8;
+                        invalidCounter = 1;
                     }
-                    validCounter--;
                 }
-                else if (invalidCounter > 0)
-                {
-                    std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
-                              << " ....ignoring invalid output " << std::endl;
-                    invalidCounter--;
-                }
-                else
-                {
-                    std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
-                              << " ....ignoring invalid output " << std::endl;
-                    validCounter = 8;
-                    invalidCounter = 1;
-                }
+            }
+
+            if (expected_output_index == 64)
+            {
+                cout << "filter " << filter << " SUCCESS" << endl;
+                success_count++;
+            }
+            else
+            {
+                cout << "filter " << filter << " SUCCESS" << endl;
+                return false;
             }
         }
 
-        if (expected_output_index == 64)
+        if(success_count == 3)
         {
-            cout << "injection SUCCESS" << endl;
             return true;
         }
         else
         {
-            cout << "injection FAILED" << endl;
             return false;
         }
+        
     }
 
     int run_tb()
@@ -309,7 +326,6 @@ struct ComputeBlob_TB : public sc_module
             return -1;
         }
 
-        cout << "Reset Success" << endl;
         cout << "TEST BENCH SUCCESS " << endl;
         cout << "       aOOOOOOOOOOa" << endl;
         cout << "     aOOOOOOOOOOOOOOa" << endl;
