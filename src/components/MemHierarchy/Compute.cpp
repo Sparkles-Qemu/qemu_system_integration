@@ -43,7 +43,7 @@ public:
                 // cout << "pe_group[" << pe_group << "]: " << pe_group_in[pe_group].read() << endl;
                 for (int pe = 0; pe < 3; pe++)
                 {
-                    psums[pe_group * 3 + pe+1] = psums[pe_group * 3 + pe].read() + (weight[pe_group * 3 + pe].read() * pe_group_in[pe_group].read());
+                    psums[pe_group * 3 + pe + 1] = psums[pe_group * 3 + pe].read() + (weight[pe_group * 3 + pe].read() * pe_group_in[pe_group].read());
                 }
             }
         }
@@ -83,9 +83,9 @@ public:
         sc_trace(tf, pe_group_in[7], "pe_group_in_7");
         sc_trace(tf, pe_group_in[8], "pe_group_in_8");
 
-        for(int i = 0; i<28; i++)
+        for (int i = 0; i < 28; i++)
         {
-            sc_trace(tf, psums[i], (string("psums")+std::to_string(i)));
+            sc_trace(tf, psums[i], (string("psums") + std::to_string(i)));
         }
         SC_METHOD(update);
         sensitive << _clk.pos();
@@ -121,7 +121,7 @@ public:
         {
             if (control->enable())
             {
-                std::vector<std::vector<int>> slice(3,std::vector<int>(3, -1));
+                std::vector<std::vector<int>> slice(3, std::vector<int>(3, -1));
                 cout << "TimeVal: " << timeval << endl;
                 cout << "ifmap idx slice " << timeval << endl;
                 for (int chIdx = 0; chIdx < 3; chIdx++)
@@ -136,9 +136,9 @@ public:
                         }
                     }
                 }
-                for(auto& row: slice)
+                for (auto& row : slice)
                 {
-                    for(auto& col: row)
+                    for (auto& col : row)
                     {
                         cout << col << ", ";
                     }
@@ -153,11 +153,11 @@ public:
     void loadBlobWeights()
     {
         std::vector<DataType> weights(27);
-        for(int j = 0; j<3; j++)
+        for (int j = 0; j < 3; j++)
         {
             for (int i = 0; i < 9; i++)
             {
-                weights[j*9 + i] = i + 1;
+                weights[j * 9 + i] = i + 1;
             }
         }
         blob.loadWeights(weights);
@@ -212,14 +212,18 @@ struct ComputeBlob_TB : public sc_module
         control.set_reset(false);
         dut.loadBlobWeights();
         sc_start(1, SC_NS);
-        // for (int i = 0; i < 27; i++)
-        // {
-        //     if (dut.blob.weight[i] != DataType(i + 1))
-        //     {
-        //         cout << "dut.blob.weight[i] != i+1 FAILED!" << endl;
-        //         return false;
-        //     }
-        // }
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                cout << "expected: " << DataType(j + 1) << " actual: " << dut.blob.weight[i * 9 + j] << endl;
+                if (dut.blob.weight[i * 9 + j] != DataType(j + 1))
+                {
+                    cout << "dut.blob.weight[i] != i+1 FAILED!" << endl;
+                    return false;
+                }
+            }
+        }
         return true;
     }
 
@@ -227,14 +231,63 @@ struct ComputeBlob_TB : public sc_module
     {
         cout << "Validating injection" << endl;
         control.set_enable(true);
-        for (int i = 0; i < 86; i++)
+        float expected_output[64] = {15678, 15813, 15948, 16083, 16218, 16353, 16488, 16623, 17028, 17163, 17298, 17433, 17568, 17703, 17838, 17973, 18378, 18513, 18648, 18783, 18918, 19053, 19188, 19323, 19728, 19863, 19998, 20133, 20268, 20403, 20538, 20673, 21078, 21213, 21348, 21483, 21618, 21753, 21888, 22023, 22428, 22563, 22698, 22833, 22968, 23103, 23238, 23373, 23778, 23913, 24048, 24183, 24318, 24453, 24588, 24723, 25128, 25263, 25398, 25533, 25668, 25803, 25938, 26073};
+        bool startValidation = false;
+        int expected_output_index = 0;
+        int validCounter = 8;
+        int invalidCounter = 1;
+        for (int k = 0; expected_output_index < 64; ++k)
         {
             sc_start(1, SC_NS);
+            if (!startValidation && DataType(expected_output[0]) == dut.blob.psum_out.read())
+            {
+                startValidation = true;
+            }
+            if (startValidation)
+            {
+                if (validCounter > 0)
+                {
+                    std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
+                              << " expected_output: " << expected_output[expected_output_index];
+
+                    if (DataType(expected_output[expected_output_index]) == dut.blob.psum_out.read())
+                    {
+                        std::cout << " ....assertion succuss!!" << std::endl;
+                        expected_output_index++;
+                    }
+                    else
+                    {
+                        std::cout << " ....assertion failure, terminating....!!" << std::endl;
+                        break;
+                    }
+                    validCounter--;
+                }
+                else if (invalidCounter > 0)
+                {
+                    std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
+                              << " ....ignoring invalid output " << std::endl;
+                    invalidCounter--;
+                }
+                else
+                {
+                    std::cout << "@" << sc_time_stamp() << " dut.blob.psum_out: " << dut.blob.psum_out
+                              << " ....ignoring invalid output " << std::endl;
+                    validCounter = 8;
+                    invalidCounter = 1;
+                }
+            }
         }
 
-        sc_start(100, SC_NS);
-        cout << "injection SUCCESS" << endl;
-        return true;
+        if (expected_output_index == 64)
+        {
+            cout << "injection SUCCESS" << endl;
+            return true;
+        }
+        else
+        {
+            cout << "injection SUCCESS" << endl;
+            return false;
+        }
     }
 
     int run_tb()
