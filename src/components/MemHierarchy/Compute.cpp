@@ -130,7 +130,7 @@ public:
                         {
                             for (int grpIdx = 0; grpIdx < 3; grpIdx++)
                             {
-                                if (ifmapIdx >= (chIdx * 9 + grpIdx*3) && ifmapIdx < (80 + grpIdx * 10 + chIdx * 100))
+                                if (ifmapIdx >= (chIdx * 9 + grpIdx*3) && ifmapIdx < (80 + (chIdx * 9 + grpIdx*3)))
                                 {
                                     int grp_ifmap_idx = (ifmapIdx - (chIdx * 9 + grpIdx*3)) + grpIdx * 10 + chIdx * 100;
                                     pe_group_sig[chIdx * 3 + grpIdx].write(ifmap[grp_ifmap_idx]);
